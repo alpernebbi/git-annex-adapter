@@ -46,6 +46,10 @@ class TestGitRepo(TestCase):
         assert repo.tree_hash() == \
                '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
+    @with_tar_repo('repo-empty.tar.gz')
+    def test_git_from_tar_2(self, repo):
+        assert repo.branches() == ('master',)
+
     @with_tar_repo('repo-three-branches-a.tar.gz')
     def test_git_branches_1(self, repo):
         assert repo.branches() == \
