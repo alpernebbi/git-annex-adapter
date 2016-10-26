@@ -13,6 +13,9 @@ class GitRepo:
         if not os.path.isdir(os.path.join(self.path, '.git')):
             print("Initializing git repo at {}".format(self.path))
             self._git('init')
+
+        if 'master' not in self.branches():
+            self.checkout('master')
             self.commit('Initialize repo', allow_empty=True)
 
     def _git(self, *commands):
