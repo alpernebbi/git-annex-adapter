@@ -25,6 +25,15 @@ class GitRepo:
     def status(self):
         return self._git('status', '-s')
 
+    def branches(self):
+        branch_list = self._git('branch', '--list').split()
+        if '*' in branch_list:
+            current_branch = branch_list[branch_list.index('*') + 1]
+            branch_list.remove('*')
+            branch_list.remove(current_branch)
+            branch_list.insert(0, current_branch)
+        return tuple(branch_list)
+
     def commit(self, message, add=True, allow_empty=False):
         command = ['commit', '-m', message]
         if add: command.append('-a')
