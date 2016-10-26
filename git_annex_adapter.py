@@ -13,6 +13,7 @@ class GitRepo:
         if not os.path.isdir(os.path.join(self.path, '.git')):
             print("Initializing git repo at {}".format(self.path))
             self._git('init')
+            self.commit('Initialize repo', allow_empty=True)
 
     def _git(self, *commands):
         return subprocess.check_output(
