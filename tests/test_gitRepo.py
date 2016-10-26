@@ -11,7 +11,7 @@ def with_temp_repo(func):
     def wrapper(*args, **kwargs):
         with tempfile.TemporaryDirectory() as repo_path:
             repo = GitRepo(repo_path)
-            func(*args, **kwargs, repo=repo)
+            return func(*args, **kwargs, repo=repo)
     return wrapper
 
 
@@ -23,7 +23,7 @@ def with_tar_repo(tar_path):
                 with tarfile.open(tar_path) as tar:
                     tar.extractall(path=repo_path)
                 repo = GitRepo(repo_path)
-                func(*args, **kwargs, repo=repo)
+                return func(*args, **kwargs, repo=repo)
         return wrapper
     return decorator
 
