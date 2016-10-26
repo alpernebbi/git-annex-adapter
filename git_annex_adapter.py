@@ -14,7 +14,7 @@ class GitRepo:
             print("Initializing git repo at {}".format(self.path))
             self._git('init')
 
-        if 'master' not in self.branches():
+        if 'master' not in self.branches:
             self.checkout('master')
             self.commit('Initialize repo', allow_empty=True)
 
@@ -28,6 +28,7 @@ class GitRepo:
     def status(self):
         return self._git('status', '-s')
 
+    @property
     def branches(self):
         branch_list = self._git('branch', '--list').split()
         if '*' in branch_list:
@@ -39,7 +40,7 @@ class GitRepo:
 
     def checkout(self, branch):
         command = ['checkout', branch]
-        if branch not in self.branches(): command.insert(1, '-b')
+        if branch not in self.branches: command.insert(1, '-b')
         return self._git(*command)
 
     def commit(self, message, add=True, allow_empty=False):

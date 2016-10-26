@@ -48,36 +48,36 @@ class TestGitRepo(TestCase):
 
     @with_tar_repo('repo-empty.tar.gz')
     def test_git_from_tar_2(self, repo):
-        assert repo.branches() == ('master',)
+        assert repo.branches == ('master',)
 
     @with_tar_repo('repo-three-branches-a.tar.gz')
     def test_git_branches_1(self, repo):
-        assert repo.branches() == \
+        assert repo.branches == \
                ('a', 'master', 'x')
 
     @with_tar_repo('repo-three-branches-m.tar.gz')
     def test_git_branches_2(self, repo):
-        assert repo.branches() == \
+        assert repo.branches == \
                ('master', 'a', 'x')
 
     @with_tar_repo('repo-three-branches-x.tar.gz')
     def test_git_branches_3(self, repo):
-        assert repo.branches() == \
+        assert repo.branches == \
                ('x', 'a', 'master')
 
     @with_tar_repo('repo-three-branches-m.tar.gz')
     def test_git_checkout(self, repo):
-        assert repo.branches() == \
+        assert repo.branches == \
                ('master', 'a', 'x')
 
         repo.checkout('a')
-        assert repo.branches() == \
+        assert repo.branches == \
                ('a', 'master', 'x')
 
         repo.checkout('x')
-        assert repo.branches() == \
+        assert repo.branches == \
                ('x', 'a', 'master')
 
         repo.checkout('n')
-        assert repo.branches() == \
+        assert repo.branches == \
                ('n', 'a', 'master', 'x')
