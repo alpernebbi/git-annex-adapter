@@ -43,7 +43,7 @@ class TestGitRepo(TestCase):
 
     @with_tar_repo('repo-initial-commit.tar.gz')
     def test_git_from_tar_1(self, repo):
-        assert repo.tree_hash() == \
+        assert repo.tree_hash == \
                '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
     @with_tar_repo('repo-empty.tar.gz')
