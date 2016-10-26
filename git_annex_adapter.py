@@ -23,3 +23,9 @@ class GitRepo:
 
     def status(self):
         return self._git('status', '-s')
+
+    def commit(self, message, add=True, allow_empty=False):
+        command = ['commit', '-m', message]
+        if add: command.append('-a')
+        if allow_empty: command.append('--allow-empty')
+        return self._git(*command)
