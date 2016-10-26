@@ -60,3 +60,20 @@ class TestGitRepo(TestCase):
     def test_git_branches_3(self, repo):
         assert repo.branches() == \
                ('x', 'a', 'master')
+
+    @with_tar_repo('repo-three-branches-m.tar.gz')
+    def test_git_checkout(self, repo):
+        assert repo.branches() == \
+               ('master', 'a', 'x')
+
+        repo.checkout('a')
+        assert repo.branches() == \
+               ('a', 'master', 'x')
+
+        repo.checkout('x')
+        assert repo.branches() == \
+               ('x', 'a', 'master')
+
+        repo.checkout('n')
+        assert repo.branches() == \
+               ('n', 'a', 'master', 'x')

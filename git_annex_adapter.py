@@ -34,6 +34,11 @@ class GitRepo:
             branch_list.insert(0, current_branch)
         return tuple(branch_list)
 
+    def checkout(self, branch):
+        command = ['checkout', branch]
+        if branch not in self.branches(): command.insert(1, '-b')
+        return self._git(*command)
+
     def commit(self, message, add=True, allow_empty=False):
         command = ['commit', '-m', message]
         if add: command.append('-a')
