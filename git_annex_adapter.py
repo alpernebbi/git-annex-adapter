@@ -20,3 +20,6 @@ class GitRepo:
             universal_newlines=True,
             cwd=self.path,
         )
+
+    def status(self):
+        return self._git('status', '-s')

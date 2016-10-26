@@ -18,3 +18,7 @@ class TestGitRepo(TestCase):
     @with_temp_repo
     def test_git(self, repo):
         repo._git('--version')
+
+    @with_temp_repo
+    def test_git_status(self, repo):
+        repo.status()
