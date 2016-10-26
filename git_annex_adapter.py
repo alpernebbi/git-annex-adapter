@@ -36,6 +36,10 @@ class GitRepo:
             branch_list.remove('*')
             branch_list.remove(current_branch)
             branch_list.insert(0, current_branch)
+        elif branch_list:
+            raise RuntimeError(
+                'No current branch found among: \n'
+                '    {}\n    in {}'.format(branch_list, self.path))
         return tuple(branch_list)
 
     def checkout(self, branch):
