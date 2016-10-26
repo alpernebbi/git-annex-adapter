@@ -81,3 +81,8 @@ class TestGitRepo(TestCase):
         repo.checkout('n')
         assert repo.branches == \
                ('n', 'a', 'master', 'x')
+
+    @with_tar_repo('repo-detached-head.tar.gz')
+    def test_git_detached_head(self, repo):
+        assert repo.branches == \
+               ('(HEAD detached at ae034d5)', 'master')
