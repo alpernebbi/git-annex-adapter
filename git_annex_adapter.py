@@ -30,3 +30,7 @@ class GitRepo:
         if add: command.append('-a')
         if allow_empty: command.append('--allow-empty')
         return self._git(*command)
+
+    def tree_hash(self):
+        commit = self._git('cat-file', 'commit', 'HEAD').split()
+        return commit[commit.index('tree') + 1]
