@@ -30,13 +30,15 @@ class GitRepo:
 
     @property
     def branches(self):
-        branch_list = self._git('branch', '--list').split()
-        if '*' in branch_list:
-            current_branch = branch_list[branch_list.index('*') + 1]
-            branch_list.remove('*')
-            branch_list.remove(current_branch)
-            branch_list.insert(0, current_branch)
-        elif branch_list:
+        branch_list = []
+        current_exists = False
+        for branch in self._git('branch', '--list').splitlines():
+            if branch[0] == '*':
+                branch_list.insert(0, branch[2:])
+                current_exists = True
+            else:
+                branch_list.append(branch[2:])
+        if branch_list and not current_exists:
             raise RuntimeError(
                 'No current branch found among: \n'
                 '    {}\n    in {}'.format(branch_list, self.path))
