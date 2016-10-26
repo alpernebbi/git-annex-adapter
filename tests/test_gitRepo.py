@@ -5,13 +5,13 @@ import functools
 from git_annex_adapter import GitRepo
 
 
-def with_temp_repo(test_f):
-    @functools.wraps(test_f)
-    def new_test_f(*args, **kwargs):
+def with_temp_repo(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
         with tempfile.TemporaryDirectory() as repo_path:
             repo = GitRepo(repo_path)
-            test_f(*args, **kwargs, repo=repo)
-    return new_test_f
+            func(*args, **kwargs, repo=repo)
+    return wrapper
 
 
 class TestGitRepo(TestCase):
