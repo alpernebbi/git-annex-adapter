@@ -1,3 +1,4 @@
+import functools
 import subprocess
 import os
 
@@ -69,3 +70,25 @@ class GitRepo:
     def tree_hash(self):
         commit = self._git('cat-file', 'commit', 'HEAD').split()
         return commit[commit.index('tree') + 1]
+
+
+class GitAnnexRepo(GitRepo):
+    def __init__(self, path):
+        super().__init__(path)
+        self.annex = GitAnnex(self)
+
+    @classmethod
+    def make_annex(cls, repo):
+        repo.annex = GitAnnex(repo)
+        repo.__class__ = cls
+
+
+class GitAnnex:
+    def __init__(self, repo):
+        self.repo = repo
+        self._annex = functools.partial(repo._git, 'annex')
+
+        if not os.path.isdir(os.path.join(repo.path, '.git', 'annex')):
+            print("Initializing git-annex at {}".format(repo.path))
+            self._annex('init', 'albumin')
+
