@@ -61,3 +61,11 @@ class TestGitRepo(TestCase):
     def test_git_detached_head(self, repo):
         assert repo.branches == \
                ('(HEAD detached at ae034d5)', 'master')
+
+    @with_tar_repo('repo-two-files-extend.tar.gz')
+    def test_git_cherry_pick(self, repo):
+        repo.checkout('895131e', new_branch=False)
+        repo.checkout('alt')
+        repo.cherry_pick('678ff80')
+        assert repo.tree_hash == \
+            '9af9706879aba9cbfc7e8f70e8fe87c20d6678db'

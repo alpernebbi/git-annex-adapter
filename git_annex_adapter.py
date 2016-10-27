@@ -56,6 +56,9 @@ class GitRepo:
         if allow_empty: command.append('--allow-empty')
         return self._git(*command)
 
+    def cherry_pick(self, branch):
+        return self._git("cherry-pick", branch)
+
     @property
     def tree_hash(self):
         commit = self._git('cat-file', 'commit', 'HEAD').split()
