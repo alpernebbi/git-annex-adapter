@@ -73,16 +73,14 @@ class GitRepo:
         if os.path.isdir(abs_src) and os.path.isdir(abs_dest) and merge:
             for src_ in files_in(abs_src, relative=self.path):
                 dest_ = os.path.join(dest, os.path.relpath(src_, src))
-                dest_dir = os.path.dirname(dest_)
-                abs_dest_dir = os.path.join(self.path, dest_dir)
-                os.makedirs(abs_dest_dir, exist_ok=True)
                 self.move(src_, dest_, overwrite=overwrite)
         elif os.path.isfile(abs_dest):
-            if overwrite:
+            if os.path.samefile(abs_src, abs_dest) or overwrite:
                 self._git('rm', dest)
+                dest_dir = os.path.dirname(dest)
+                abs_dest_dir = os.path.join(self.path, dest_dir)
+                os.makedirs(abs_dest_dir, exist_ok=True)
                 self._git('mv', src, dest)
-            elif os.path.samefile(abs_src, abs_dest):
-                self._git('rm', src)
             else:
                 raise ValueError(
                     "Destination {} already exists.".format(dest))
