@@ -5,6 +5,14 @@ import tarfile
 from git_annex_adapter import GitRepo
 
 
+def func_chain(*funcs):
+    def chain(f):
+        for func in reversed(funcs):
+            f = func(f)
+        return f
+    return chain
+
+
 def with_temp_repo(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
