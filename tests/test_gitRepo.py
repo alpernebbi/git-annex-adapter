@@ -1,6 +1,8 @@
 from unittest import TestCase
 from tests.utils import with_temp_repo
 from tests.utils import with_tar_repo
+from tests.utils import with_temp_annex
+from tests.utils import with_tar_annex
 
 
 class TestGitRepo(TestCase):
@@ -81,3 +83,9 @@ class TestGitRepo(TestCase):
         repo.commit('extend file c')
         assert repo.tree_hash == \
             '149cb6cb6b7ffa7508ce5b4936f307de2acdbe17'
+
+
+class TestGitAnnexRepo(TestCase):
+    @with_temp_annex
+    def test_git(self, repo):
+        repo.annex._annex('version')

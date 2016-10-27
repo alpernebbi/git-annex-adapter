@@ -3,6 +3,7 @@ import functools
 import tarfile
 
 from git_annex_adapter import GitRepo
+from git_annex_adapter import GitAnnexRepo
 
 
 def func_chain(*funcs):
@@ -46,3 +47,19 @@ def from_tar(tar_path):
 
 def with_tar_repo(tar_path):
     return func_chain(with_temp_folder, from_tar(tar_path), with_repo)
+
+
+def with_annex(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        GitAnnexRepo.make_annex(kwargs['repo'])
+        return func(*args, **kwargs)
+    return wrapper
+
+
+with_temp_annex = func_chain(with_temp_folder, with_repo, with_annex)
+
+
+def with_tar_annex(tar_path):
+    return func_chain(
+        with_temp_folder, from_tar(tar_path), with_repo, with_annex)
