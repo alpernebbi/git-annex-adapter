@@ -97,3 +97,10 @@ class TestGitAnnexRepo(TestCase):
             'b4320c27c14395260b0fc2e8afb5d761.txt'
         assert repo.annex.calckey('a.txt') == key
 
+    @with_tar_annex('annex-tars/single-file.tar.gz')
+    def test_locate(self, repo):
+        key = 'SHA256E-s1000--' \
+            'e109ee3a23b6f06d5d303d761c8937cf' \
+            'b4320c27c14395260b0fc2e8afb5d761.txt'
+        assert repo.annex.locate(key) == \
+            '.git/annex/objects/q5/F4/{}/{}'.format(key, key)

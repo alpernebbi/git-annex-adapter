@@ -95,3 +95,5 @@ class GitAnnex:
     def calckey(self, file_path):
         return self._annex('calckey', file_path)[:-1]
 
+    def locate(self, key):
+        return self._annex('contentlocation', key)[:-1]
