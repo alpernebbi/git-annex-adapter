@@ -93,7 +93,7 @@ class GitAnnex:
             self._annex('init', 'albumin')
 
     def calckey(self, file_path):
-        return self._annex('calckey', file_path)[:-1]
+        return self._annex('calckey', file_path).rstrip()
 
     def locate(self, key):
-        return self._annex('contentlocation', key)[:-1]
+        return self._annex('contentlocation', key).rstrip()
