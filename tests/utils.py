@@ -53,7 +53,10 @@ def with_annex(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         GitAnnexRepo.make_annex(kwargs['repo'])
-        return func(*args, **kwargs)
+        try:
+            return func(*args, **kwargs)
+        finally:
+            kwargs['repo'].annex._annex('uninit')
     return wrapper
 
 
