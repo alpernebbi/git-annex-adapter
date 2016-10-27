@@ -69,3 +69,15 @@ class TestGitRepo(TestCase):
         repo.cherry_pick('678ff80')
         assert repo.tree_hash == \
             '9af9706879aba9cbfc7e8f70e8fe87c20d6678db'
+
+    @with_tar_repo('repo-two-half-files-extend.tar.gz')
+    def test_git_stash(self, repo):
+        assert repo.status
+        repo.stash()
+        assert not repo.status
+        repo.checkout('master')
+        repo.cherry_pick('e21989f')
+        repo.stash(pop=True)
+        repo.commit('extend file c')
+        assert repo.tree_hash == \
+            '149cb6cb6b7ffa7508ce5b4936f307de2acdbe17'
