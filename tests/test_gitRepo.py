@@ -10,7 +10,7 @@ class TestGitRepo(TestCase):
 
     @with_temp_repo
     def test_git_status(self, repo):
-        repo.status()
+        assert not repo.status
 
     @with_temp_repo
     def test_git_commit(self, repo):

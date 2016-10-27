@@ -25,6 +25,7 @@ class GitRepo:
             cwd=self.path,
         )
 
+    @property
     def status(self):
         return self._git('status', '-s')
 
