@@ -66,11 +66,18 @@ class GitRepo:
         if pop: command.append('pop')
         return self._git(*command)
 
-    def move(self, src, dest, overwrite=False):
+    def move(self, src, dest, overwrite=False, merge=True):
         abs_src = os.path.join(self.path, src)
         abs_dest = os.path.join(self.path, dest)
 
-        if os.path.isfile(abs_dest):
+        if os.path.isdir(abs_src) and os.path.isdir(abs_dest) and merge:
+            for src_ in files_in(abs_src, relative=self.path):
+                dest_ = os.path.join(dest, os.path.relpath(src_, src))
+                dest_dir = os.path.dirname(dest_)
+                abs_dest_dir = os.path.join(self.path, dest_dir)
+                os.makedirs(abs_dest_dir, exist_ok=True)
+                self.move(src_, dest_, overwrite=overwrite)
+        elif os.path.isfile(abs_dest):
             if overwrite:
                 self._git('rm', dest)
                 self._git('mv', src, dest)
@@ -119,3 +126,13 @@ class GitAnnex:
 
     def locate(self, key):
         return self._annex('contentlocation', key).rstrip()
+
+
+def files_in(dir_path, relative=False):
+    exclude = ['.git']
+    for root, dirs, files in os.walk(dir_path, topdown=True):
+        dirs[:] = [d for d in dirs if d not in exclude]
+        if relative:
+            root = os.path.relpath(root, start=relative)
+        for f in files:
+            yield os.path.join(root, f)
