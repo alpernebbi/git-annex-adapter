@@ -92,7 +92,8 @@ class TestGitAnnexRepo(TestCase):
 
     @with_tar_annex('annex-tars/single-file.tar.gz')
     def test_calckey(self, repo):
-        assert repo.annex.calckey('a.txt') == 'SHA256E-s1000--' \
-               'e109ee3a23b6f06d5d303d761c8937cf' \
-               'b4320c27c14395260b0fc2e8afb5d761.txt'
+        key = 'SHA256E-s1000--' \
+            'e109ee3a23b6f06d5d303d761c8937cf' \
+            'b4320c27c14395260b0fc2e8afb5d761.txt'
+        assert repo.annex.calckey('a.txt') == key
 
