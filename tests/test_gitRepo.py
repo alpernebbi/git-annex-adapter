@@ -84,6 +84,13 @@ class TestGitRepo(TestCase):
         assert repo.tree_hash == \
             '149cb6cb6b7ffa7508ce5b4936f307de2acdbe17'
 
+    @with_tar_repo('repo-tars/two-files-extend.tar.gz')
+    def test_git_move_free(self, repo):
+        repo.move('b.txt', 'c.txt')
+        repo.commit('move b to c')
+        assert repo.tree_hash == \
+            '433015e2412dce520e9117002d42f6b31a06a406'
+
 
 class TestGitAnnexRepo(TestCase):
     @with_temp_annex

@@ -66,6 +66,9 @@ class GitRepo:
         if pop: command.append('pop')
         return self._git(*command)
 
+    def move(self, src, dest):
+        self._git('mv', src, dest)
+
     @property
     def tree_hash(self):
         commit = self._git('cat-file', 'commit', 'HEAD').split()
