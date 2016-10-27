@@ -92,3 +92,6 @@ class GitAnnex:
             print("Initializing git-annex at {}".format(repo.path))
             self._annex('init', 'albumin')
 
+    def calckey(self, file_path):
+        return self._annex('calckey', file_path)[:-1]
+
