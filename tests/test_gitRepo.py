@@ -91,6 +91,13 @@ class TestGitRepo(TestCase):
         assert repo.tree_hash == \
             '433015e2412dce520e9117002d42f6b31a06a406'
 
+    @with_tar_repo('repo-tars/two-files-extend.tar.gz')
+    def test_git_move_conflict(self, repo):
+        repo.move('a.txt', 'b.txt', overwrite=True)
+        repo.commit('move a to b')
+        assert repo.tree_hash == \
+               '83628542da01fb677c2afcb0e8c934023a56412e'
+
 
 class TestGitAnnexRepo(TestCase):
     @with_temp_annex
@@ -111,3 +118,11 @@ class TestGitAnnexRepo(TestCase):
             'b4320c27c14395260b0fc2e8afb5d761.txt'
         assert repo.annex.locate(key) == \
             '.git/annex/objects/q5/F4/{}/{}'.format(key, key)
+
+    @with_tar_annex('annex-tars/two-identical.tar.gz')
+    def test_git_move_same(self, repo):
+        repo.move('a.txt', 'b.txt')
+        repo.commit('move a to b')
+        assert repo.tree_hash == \
+            'bfbabae495c75f33ff22f262decf12d39ba79678'
+

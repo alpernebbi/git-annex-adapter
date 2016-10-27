@@ -66,8 +66,22 @@ class GitRepo:
         if pop: command.append('pop')
         return self._git(*command)
 
-    def move(self, src, dest):
-        self._git('mv', src, dest)
+    def move(self, src, dest, overwrite=False):
+        abs_src = os.path.join(self.path, src)
+        abs_dest = os.path.join(self.path, dest)
+
+        if os.path.isfile(abs_dest):
+            if overwrite:
+                self._git('rm', dest)
+                self._git('mv', src, dest)
+            elif os.path.samefile(abs_src, abs_dest):
+                self._git('rm', src)
+            else:
+                raise ValueError(
+                    "Destination {} already exists.".format(dest))
+        else:
+            self._git('mv', src, dest)
+
 
     @property
     def tree_hash(self):
