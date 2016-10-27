@@ -109,6 +109,11 @@ class GitAnnex:
             print("Initializing git-annex at {}".format(repo.path))
             self._annex('init', 'albumin')
 
+    def import_(self, path, duplicate=True):
+        command = ['import', path]
+        if duplicate: command.append('--duplicate')
+        return self._annex(*command)
+
     def calckey(self, file_path):
         return self._annex('calckey', file_path).rstrip()
 

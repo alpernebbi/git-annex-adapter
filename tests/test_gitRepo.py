@@ -3,6 +3,9 @@ from tests.utils import with_temp_repo
 from tests.utils import with_tar_repo
 from tests.utils import with_temp_annex
 from tests.utils import with_tar_annex
+from tests.utils import with_temp_folder
+from tests.utils import from_tar
+import os
 
 
 class TestGitRepo(TestCase):
@@ -126,3 +129,12 @@ class TestGitAnnexRepo(TestCase):
         assert repo.tree_hash == \
             'bfbabae495c75f33ff22f262decf12d39ba79678'
 
+    @with_temp_annex
+    @with_temp_folder
+    @from_tar('data-tars/three-nested.tar.gz')
+    def test_import(self, repo, cwd):
+        repo.annex.import_(cwd)
+        repo.move(os.path.basename(cwd), 'new')
+        repo.commit('import files')
+        assert repo.tree_hash == \
+            '265633410b1db4d12458a27a3209a161880c8794'
