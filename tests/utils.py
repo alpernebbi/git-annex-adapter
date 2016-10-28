@@ -17,16 +17,16 @@ def func_chain(*funcs):
 def with_temp_folder(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        with tempfile.TemporaryDirectory() as tmp_cwd:
-            return func(*args, **kwargs, cwd=tmp_cwd)
+        with tempfile.TemporaryDirectory() as temp_folder:
+            return func(*args, **kwargs, temp_folder=temp_folder)
     return wrapper
 
 
 def with_repo(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        repo = GitRepo(kwargs['cwd'])
-        del kwargs['cwd']
+        repo = GitRepo(kwargs['temp_folder'])
+        del kwargs['temp_folder']
         return func(*args, **kwargs, repo=repo)
     return wrapper
 
@@ -39,7 +39,7 @@ def from_tar(tar_path):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             with tarfile.open(tar_path) as tar:
-                tar.extractall(path=kwargs['cwd'])
+                tar.extractall(path=kwargs['temp_folder'])
                 return func(*args, **kwargs)
         return wrapper
     return decorator
