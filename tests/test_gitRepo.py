@@ -4,6 +4,7 @@ from tests.utils import with_repo
 import os
 
 
+
 class TestGitRepo(TestCase):
     @with_repo()
     def test_git(self, repo):
@@ -137,3 +138,64 @@ class TestGitAnnexRepo(TestCase):
         repo.annex.import_(temp_folder)
         repo.move(tmp_name, 'new')
         assert not repo.status
+
+
+class TestGitAnnexRepoMetadata(TestCase):
+    @with_repo('annex-tars/metadata-two.tar.gz', annex=True)
+    def test_query(self, repo):
+        key_a = 'SHA256E-s1000--' \
+            '9b5c838c2f22a5ab7f0a832dcae4be54' \
+            'df2a6cc5856e6440da60265de8ded5a2.txt'
+
+        key_b = 'SHA256E-s1000--' \
+            '155b0b081f29291a46cd3ae8da1fc5f1' \
+            '4e7bf96baef2a8a484c1e3833fd6fea2.txt'
+
+        resp_a = repo.annex.meta._query(key=key_a)
+        resp_b = repo.annex.meta._query(file='b/b.txt')
+
+        del resp_a['note'], resp_b['note']
+
+        assert resp_a == {
+            "command": "metadata",
+            "success": True,
+            "key": key_a,
+            "file": None,
+            "fields": {
+                "test_str": ["OK"],
+                "test_str-lastchanged": ["2016-10-28@08-54-24"],
+                "test_int": ["3"],
+                "test_int-lastchanged": ["2016-10-28@08-53-53"],
+                "test_list": ["one", "three", "two"],
+                "test_list-lastchanged": ["2016-10-28@08-54-53"],
+                "lastchanged": ["2016-10-28@08-54-53"],
+            }
+        }
+
+        assert resp_b == {
+            "command": "metadata",
+            "success": True,
+            "key": key_b,
+            "file": 'b/b.txt',
+            "fields": {
+                "test": ["test"],
+                "test-lastchanged": ["2016-10-28@08-58-43"],
+                "lastchanged": ["2016-10-28@08-58-43"]
+            }
+        }
+
+        resp_c = repo.annex.meta._query(
+            key=key_a,
+            fields={
+                'test_str': ['NICE'],
+                'test_list': [],
+                'test': ['test']
+            }
+        )
+
+        assert resp_c['fields']['test_str'] == ['NICE']
+        assert 'test_list' not in resp_c['fields']
+        assert resp_c['fields']['test'] == ['test']
+
+        repo.annex.meta._stop()
+        assert not repo.annex.meta._running
