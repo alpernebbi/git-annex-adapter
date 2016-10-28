@@ -3,6 +3,7 @@ from tests.utils import with_folder
 from tests.utils import with_repo
 import os
 
+from git_annex_adapter import GitAnnexFileMetadata
 
 
 class TestGitRepo(TestCase):
@@ -140,7 +141,7 @@ class TestGitAnnexRepo(TestCase):
         assert not repo.status
 
 
-class TestGitAnnexRepoMetadata(TestCase):
+class TestGitAnnexMetadata(TestCase):
     @with_repo('annex-tars/metadata-two.tar.gz', annex=True)
     def test_query(self, repo):
         key_a = 'SHA256E-s1000--' \
@@ -199,3 +200,26 @@ class TestGitAnnexRepoMetadata(TestCase):
 
         repo.annex.meta._stop()
         assert not repo.annex.meta._running
+
+    @with_repo('annex-tars/metadata-two.tar.gz', annex=True)
+    def test_mapping(self, repo):
+        key_a = 'SHA256E-s1000--' \
+                '9b5c838c2f22a5ab7f0a832dcae4be54' \
+                'df2a6cc5856e6440da60265de8ded5a2.txt'
+        meta_a = GitAnnexFileMetadata(repo.annex.meta, key_a)
+
+        assert meta_a['test_str'] == 'OK'
+        assert meta_a['test_int'] == '3'
+        assert meta_a['test_list'] == {'one', 'two', 'three'}
+
+        del meta_a['test_int']
+        assert 'test_int' not in meta_a
+
+        meta_a['test'] = 'test'
+        assert meta_a['test'] == 'test'
+
+        meta_a['test_list'] |= {'four'}
+        assert meta_a['test_list'] == {'one', 'two', 'three', 'four'}
+
+        meta_a['test_list'] -= {'one', 'two', 'four'}
+        assert meta_a['test_list'] == 'three'

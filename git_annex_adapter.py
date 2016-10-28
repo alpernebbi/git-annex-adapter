@@ -2,6 +2,7 @@ import functools
 import subprocess
 import os
 import json
+import collections.abc
 
 
 class GitRepo:
@@ -164,6 +165,45 @@ class GitAnnexRepoMetadata:
                 self._program.kill()
             else:
                 raise
+
+
+class GitAnnexFileMetadata(collections.abc.MutableMapping):
+    def __init__(self, repo_meta, key):
+        self.key = key
+        self._query = functools.partial(repo_meta._query, key=self.key)
+
+    def __getitem__(self, meta_key):
+        fields = self._query()["fields"]
+        value_list = fields.get(meta_key)
+        if not value_list:
+            return None
+        elif len(value_list) == 1:
+            return value_list[0]
+        else:
+            return set(value_list)
+
+    def __setitem__(self, meta_key, value):
+        if meta_key.endswith('lastchanged'):
+            raise KeyError("Can't change timestamps manually.")
+        if isinstance(value, (set, tuple)):
+            value = list(value)
+        elif not isinstance(value, list):
+            value = [value]
+        self._query(fields={meta_key:value})
+
+    def __delitem__(self, meta_key):
+        self._query(fields={meta_key:[]})
+
+    def __contains__(self, meta_key):
+        return meta_key in self._query()['fields']
+
+    def __iter__(self):
+        fields = self._query()['fields']
+        field_filter = lambda x : not x.endswith('lastchanged')
+        yield from filter(field_filter, fields.keys())
+
+    def __len__(self):
+        return len([x for x in self])
 
 
 def files_in(dir_path, relative=False):
