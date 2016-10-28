@@ -142,7 +142,7 @@ class GitAnnex:
         return {meta['file']: meta['key'] for meta in meta_list}
 
 
-class GitAnnexRepoMetadata:
+class GitAnnexRepoMetadata(collections.abc.Mapping):
     def __init__(self, repo):
         self.repo = repo
         self._program = None
@@ -177,6 +177,21 @@ class GitAnnexRepoMetadata:
                 self._program.kill()
             else:
                 raise
+
+    def __getitem__(self, key):
+        if key in self.repo.annex.keys:
+            return GitAnnexFileMetadata(self, key)
+        else:
+            raise KeyError("Key {} not in annex.".format(key))
+
+    def __contains__(self, key):
+        return key in self.repo.annex.keys
+
+    def __iter__(self):
+        yield from self.repo.annex.keys
+
+    def __len__(self):
+        return len(self.repo.annex.keys)
 
 
 class GitAnnexFileMetadata(collections.abc.MutableMapping):

@@ -3,8 +3,6 @@ from tests.utils import with_folder
 from tests.utils import with_repo
 import os
 
-from git_annex_adapter import GitAnnexFileMetadata
-
 
 class TestGitRepo(TestCase):
     @with_repo()
@@ -219,7 +217,7 @@ class TestGitAnnexMetadata(TestCase):
         key_a = 'SHA256E-s1000--' \
                 '9b5c838c2f22a5ab7f0a832dcae4be54' \
                 'df2a6cc5856e6440da60265de8ded5a2.txt'
-        meta_a = GitAnnexFileMetadata(repo.annex.meta, key_a)
+        meta_a = repo.annex.meta[key_a]
 
         assert meta_a['test_str'] == 'OK'
         assert meta_a['test_int'] == '3'
@@ -236,3 +234,9 @@ class TestGitAnnexMetadata(TestCase):
 
         meta_a['test_list'] -= {'one', 'two', 'four'}
         assert meta_a['test_list'] == 'three'
+
+        key = 'SHA256E-s1000--' \
+            '00000000000000000000000000000000' \
+            '00000000000000000000000000000000.txt'
+        with self.assertRaises(KeyError):
+            repo.annex.meta[key]
