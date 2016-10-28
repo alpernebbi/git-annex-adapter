@@ -1,6 +1,5 @@
 from unittest import TestCase
-from tests.utils import with_temp_folder
-from tests.utils import from_tar
+from tests.utils import with_folder
 from tests.utils import with_repo
 import os
 
@@ -127,8 +126,7 @@ class TestGitAnnexRepo(TestCase):
             'bfbabae495c75f33ff22f262decf12d39ba79678'
 
     @with_repo(annex=True)
-    @with_temp_folder
-    @from_tar('data-tars/three-nested.tar.gz')
+    @with_folder('data-tars/three-nested.tar.gz')
     def test_import(self, repo, temp_folder):
         tmp_name = os.path.basename(temp_folder)
         repo.annex.import_(temp_folder)
