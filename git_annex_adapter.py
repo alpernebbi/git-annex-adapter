@@ -156,7 +156,14 @@ class GitAnnexRepoMetadata:
         return self._program and self._program.poll() is None
 
     def _stop(self, kill=False):
-        return self._program.terminate()
+        self._program.terminate()
+        try:
+            self._program.wait(5)
+        except subprocess.TimeoutExpired:
+            if kill:
+                self._program.kill()
+            else:
+                raise
 
 
 def files_in(dir_path, relative=False):
