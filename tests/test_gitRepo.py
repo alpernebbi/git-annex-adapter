@@ -140,6 +140,19 @@ class TestGitAnnexRepo(TestCase):
         repo.move(tmp_name, 'new')
         assert not repo.status
 
+    @with_repo('annex-tars/metadata-two.tar.gz', annex=True)
+    def test_keys_files(self, repo):
+        key_a = 'SHA256E-s1000--' \
+            '9b5c838c2f22a5ab7f0a832dcae4be54' \
+            'df2a6cc5856e6440da60265de8ded5a2.txt'
+
+        key_b = 'SHA256E-s1000--' \
+            '155b0b081f29291a46cd3ae8da1fc5f1' \
+            '4e7bf96baef2a8a484c1e3833fd6fea2.txt'
+
+        assert repo.annex.keys == {key_a, key_b}
+        assert repo.annex.files == {'a.txt': key_a, 'b/b.txt': key_b}
+
 
 class TestGitAnnexMetadata(TestCase):
     @with_repo('annex-tars/metadata-two.tar.gz', annex=True)

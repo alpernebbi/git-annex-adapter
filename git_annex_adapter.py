@@ -129,6 +129,18 @@ class GitAnnex:
     def locate(self, key):
         return self._annex('contentlocation', key).rstrip()
 
+    @property
+    def keys(self):
+        jsons = self._annex('metadata', '--all', '--json').splitlines()
+        meta_list = [json.loads(json_) for json_ in jsons]
+        return {meta['key'] for meta in meta_list}
+
+    @property
+    def files(self):
+        jsons = self._annex('metadata', '--json').splitlines()
+        meta_list = [json.loads(json_) for json_ in jsons]
+        return {meta['file']: meta['key'] for meta in meta_list}
+
 
 class GitAnnexRepoMetadata:
     def __init__(self, repo):
