@@ -1,13 +1,13 @@
 import tempfile
 import functools
 import tarfile
-import os
+import shutil
 
 from git_annex_adapter import GitRepo
 from git_annex_adapter import GitAnnexRepo
 
 
-def with_folder(tar_path=None, param='temp_folder'):
+def with_folder(tar_path=None, files=None, param='temp_folder'):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -15,6 +15,9 @@ def with_folder(tar_path=None, param='temp_folder'):
                 if tar_path:
                     with tarfile.open(tar_path) as tar:
                         tar.extractall(path=temp_folder)
+                if files:
+                    for file in files:
+                        shutil.copy2(file, temp_folder)
                 kwargs[param] = temp_folder
                 return func(*args, **kwargs)
         return wrapper
