@@ -138,6 +138,13 @@ class TestGitAnnexRepo(TestCase):
         repo.move(tmp_name, 'new')
         assert not repo.status
 
+    @with_repo(annex=True)
+    @with_folder('data-tars/three-nested.tar.gz')
+    def test_import_conflict(self, repo, temp_folder):
+        repo.annex.import_(temp_folder)
+        with self.assertRaises(ValueError):
+            repo.annex.import_(temp_folder)
+
     @with_repo('annex-tars/metadata-two.tar.gz', annex=True)
     def test_keys_files(self, repo):
         key_a = 'SHA256E-s1000--' \

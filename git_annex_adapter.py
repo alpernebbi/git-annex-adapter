@@ -124,6 +124,8 @@ class GitAnnex:
             self._annex('init', 'albumin')
 
     def import_(self, path, duplicate=True):
+        if os.path.basename(path) in os.listdir(self.repo.path):
+            raise ValueError('Import path basename conflict')
         command = ['import', path]
         if duplicate: command.append('--duplicate')
         return self._annex(*command)
