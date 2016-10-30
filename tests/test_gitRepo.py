@@ -247,3 +247,15 @@ class TestGitAnnexMetadata(TestCase):
             '00000000000000000000000000000000.txt'
         with self.assertRaises(KeyError):
             repo.annex.meta[key]
+
+    @with_repo(annex=True)
+    @with_folder(files=['annex-tars/single-file.tar.gz'])
+    def test_repeat_condition(self, repo, temp_folder):
+        repo.annex.import_(temp_folder)
+        repo.commit('annex tar')
+        key = repo.annex.keys.pop()
+
+        meta = repo.annex.meta[key]
+        for val in ['a', 'b', 'c', 'd', 'e', 'a', 'b', 'c', 'd', 'e']:
+            meta['test'] = val
+            assert meta['test'] == val
