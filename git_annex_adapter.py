@@ -102,19 +102,17 @@ class GitAnnexRepo(GitRepo):
     def __init__(self, path):
         super().__init__(path)
         self.annex = GitAnnex(self)
-        self.annex.meta = GitAnnexRepoMetadata(self)
 
     @classmethod
     def make_annex(cls, repo):
         repo.annex = GitAnnex(repo)
-        repo.annex.meta = GitAnnexRepoMetadata(repo)
         repo.__class__ = cls
 
     def __repr__(self):
         return 'GitAnnexRepo(path={!r})'.format(self.path)
 
 
-class GitAnnex:
+class GitAnnex(collections.abc.Mapping):
     def __init__(self, repo):
         self.repo = repo
         self._annex = functools.partial(repo._git, 'annex')
@@ -148,108 +146,72 @@ class GitAnnex:
         meta_list = [json.loads(json_) for json_ in jsons]
         return {meta['file']: meta['key'] for meta in meta_list}
 
-    def __repr__(self):
-        return 'GitAnnex(repo={!r})'.format(self.repo)
-
-
-class GitAnnexRepoMetadata(collections.abc.Mapping):
-    def __init__(self, repo):
-        self.repo = repo
-        self._program = None
-        self._start()
-
-    def _start(self):
-        self._program = subprocess.Popen(
-            ["git", "annex", "metadata", "--batch", "--json"],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-            cwd=self.repo.path,
-        )
-
-    def _query(self, **query):
-        json_ = json.dumps(query)
-        print(json_, file=self._program.stdin, flush=True)
-        response = self._program.stdout.readline()
-        return json.loads(response)
-
-    @property
-    def _running(self):
-        return self._program and self._program.poll() is None
-
-    def _stop(self, kill=False):
-        self._program.terminate()
-        try:
-            self._program.wait(5)
-        except subprocess.TimeoutExpired:
-            if kill:
-                self._program.kill()
-            else:
-                raise
-
     def __getitem__(self, key):
-        if key in self.repo.annex.keys:
-            return GitAnnexFileMetadata(self, key)
+        if key in self.keys:
+            return GitAnnexMetadata(self, key)
         else:
             raise KeyError("Key {} not in annex.".format(key))
 
     def __contains__(self, key):
-        return key in self.repo.annex.keys
+        return key in self.keys
 
     def __iter__(self):
-        yield from self.repo.annex.keys
+        yield from self.keys
 
     def __len__(self):
-        return len(self.repo.annex.keys)
+        return len(self.keys)
 
     def __repr__(self):
-        repr_ = 'GitAnnexRepoMetadata(repo={!r})'
-        return repr_.format(self.repo)
+        return 'GitAnnex(repo={!r})'.format(self.repo)
 
 
-class GitAnnexFileMetadata(collections.abc.MutableMapping):
-    def __init__(self, repo_meta, key):
+class GitAnnexMetadata(collections.abc.MutableMapping):
+    def __init__(self, annex, key):
         self.key = key
-        self._path = repo_meta.repo.path
-        self._query = functools.partial(repo_meta._query, key=self.key)
+        self.annex = annex
+        self._meta = functools.partial(
+            annex._annex, 'metadata', '--key', key)
 
     def __getitem__(self, meta_key):
-        fields = self._query()["fields"]
-        value_list = fields.get(meta_key)
-        if not value_list:
-            return None
-        elif len(value_list) == 1:
-            return value_list[0]
+        values = self._meta('-g', meta_key).splitlines()
+        if len(values) > 1:
+            return set(values)
+        elif len(values) == 1:
+            return values[0]
         else:
-            return set(value_list)
+            return set()
 
     def __setitem__(self, meta_key, value):
-        if meta_key.endswith('lastchanged'):
-            raise KeyError("Can't change timestamps manually.")
-        if isinstance(value, (set, tuple)):
-            value = list(value)
-        elif not isinstance(value, list):
-            value = [value]
-        self._query(fields={meta_key:value})
+        old_value = self[meta_key]
+        if not isinstance(value, set):
+            value = {value}
+        if not isinstance(old_value, set):
+            old_value = {old_value}
+
+        cmds = []
+        for v in value - old_value:
+            cmds += ['-s', '{}+={}'.format(meta_key, v)]
+        for v in old_value - value:
+            cmds += ['-s', '{}-={}'.format(meta_key, v)]
+        self._meta(*cmds)
 
     def __delitem__(self, meta_key):
-        self._query(fields={meta_key:[]})
+        self._meta('-r', meta_key)
 
     def __contains__(self, meta_key):
-        return meta_key in self._query()['fields']
+        return self[meta_key] > set()
 
     def __iter__(self):
-        fields = self._query()['fields']
-        field_filter = lambda x : not x.endswith('lastchanged')
-        yield from filter(field_filter, fields.keys())
+        json_ = self._meta('--json')
+        fields = json.loads(json_)['fields']
+        yield from fields.keys()
 
     def __len__(self):
-        return len([x for x in self])
+        len([x for x in self])
 
     def __repr__(self):
         repr_ = 'GitAnnexFileMetadata(key={!r}, path={!r})'
-        return repr_.format(self.key, self._path)
+        return repr_.format(self.key, self.annex.repo.path)
 
 
 def files_in(dir_path, relative=False):
