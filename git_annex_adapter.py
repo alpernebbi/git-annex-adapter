@@ -76,18 +76,23 @@ class GitRepo:
             for src_ in files_in(abs_src, relative=self.path):
                 dest_ = os.path.join(dest, os.path.relpath(src_, src))
                 self.move(src_, dest_, overwrite=overwrite)
-        elif os.path.isfile(abs_dest):
+            return
+
+        if os.path.isfile(abs_dest):
             if os.path.samefile(abs_src, abs_dest) or overwrite:
                 self._git('rm', dest)
-                dest_dir = os.path.dirname(dest)
-                abs_dest_dir = os.path.join(self.path, dest_dir)
-                os.makedirs(abs_dest_dir, exist_ok=True)
-                self._git('mv', src, dest)
             else:
                 raise ValueError(
                     "Destination {} already exists.".format(dest))
-        else:
-            self._git('mv', src, dest)
+
+        abs_dest_dir = os.path.dirname(abs_dest)
+        os.makedirs(abs_dest_dir, exist_ok=True)
+        self._git('mv', src, dest)
+
+        abs_src_dir = os.path.dirname(abs_src)
+        if not os.listdir(abs_src_dir):
+            os.removedirs(abs_src_dir)
+
 
     @property
     def tree_hash(self):
