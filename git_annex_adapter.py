@@ -3,6 +3,7 @@ import subprocess
 import os
 import json
 import collections.abc
+from datetime import datetime
 
 
 class GitRepo:
@@ -179,12 +180,20 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
 
     def __getitem__(self, meta_key):
         values = self._meta('-g', meta_key).splitlines()
-        if len(values) > 1:
-            return set(values)
-        elif len(values) == 1:
-            return values[0]
+        return_value = set(values)
+
+        for v in return_value:
+            try:
+                dt_obj = datetime.strptime(v, '%Y-%m-%d@%H-%M-%S')
+                return_value.remove(v)
+                return_value.add(dt_obj)
+            except (ValueError, TypeError):
+                continue
+
+        if len(return_value) == 1:
+            return return_value.pop()
         else:
-            return set()
+            return return_value
 
     def __setitem__(self, meta_key, value):
         old_value = self[meta_key]
@@ -192,6 +201,12 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
             value = {value}
         if not isinstance(old_value, set):
             old_value = {old_value}
+
+        for v in value:
+            if isinstance(v, datetime):
+                dt_str = v.strftime('%Y-%m-%d@%H-%M-%S')
+                value.remove(v)
+                value.add(dt_str)
 
         cmds = []
         for v in value - old_value:
