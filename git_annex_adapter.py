@@ -242,7 +242,9 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
     def __iter__(self):
         json_ = self._meta('--json')
         fields = json.loads(json_)['fields']
-        yield from fields.keys()
+        for field in fields.keys():
+            if not field.endswith('lastchanged'):
+                yield field
 
     def __len__(self):
         len([x for x in self])
