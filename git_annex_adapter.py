@@ -194,6 +194,12 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
                 continue
         return values
 
+    def sync_ymd(self):
+        dt = self['datetime']
+        self['year'] = dt.strftime('%Y')
+        self['month'] = dt.strftime('%m')
+        self['day'] = dt.strftime('%d')
+
     def __getitem__(self, meta_key):
         values = self._meta('-g', meta_key).splitlines()
         return_value = set(values)
@@ -222,8 +228,13 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
             cmds += ['-s', '{}-={}'.format(meta_key, v)]
         self._meta(*cmds)
 
+        if meta_key == 'datetime':
+            self.sync_ymd()
+
     def __delitem__(self, meta_key):
         self._meta('-r', meta_key)
+        if meta_key == 'datetime':
+            self.sync_ymd()
 
     def __contains__(self, meta_key):
         return self[meta_key] > set()
