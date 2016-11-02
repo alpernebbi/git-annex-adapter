@@ -229,6 +229,8 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
 
         if meta_key == 'datetime':
             self.datetime_parse(return_value)
+        elif meta_key.endswith('lastchanged'):
+            self.datetime_parse(return_value, timezone=pytz.utc)
         elif meta_key == 'timezone':
             self.timezone_parse(return_value)
 
@@ -238,6 +240,9 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
             return return_value
 
     def __setitem__(self, meta_key, value):
+        if meta_key.endswith('lastchanged'):
+            raise KeyError(meta_key)
+
         old_value = self[meta_key]
         if not isinstance(value, set):
             value = {value}
