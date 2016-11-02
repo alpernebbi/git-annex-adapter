@@ -4,6 +4,8 @@ import os
 import json
 import collections.abc
 from datetime import datetime
+from datetime import tzinfo
+import pytz
 
 
 class GitRepo:
@@ -174,24 +176,45 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
         self._meta = functools.partial(
             annex._annex, 'metadata', '--key', key)
 
-    @staticmethod
-    def datetime_format(values):
+    def datetime_format(self, values):
         for v in values:
             if isinstance(v, datetime):
-                dt_str = v.strftime('%Y-%m-%d@%H-%M-%S')
+                v_utc = v.astimezone(pytz.utc)
+                dt_str = v_utc.strftime('%Y-%m-%d@%H-%M-%S')
                 values.remove(v)
                 values.add(dt_str)
         return values
 
-    @staticmethod
-    def datetime_parse(values):
+    def datetime_parse(self, values, timezone=None):
+        if not timezone:
+            timezone = self['timezone']
         for v in values:
             try:
                 dt_obj = datetime.strptime(v, '%Y-%m-%d@%H-%M-%S')
+                dt_utc = pytz.utc.localize(dt_obj)
+                dt_local = dt_utc.astimezone(timezone)
                 values.remove(v)
-                values.add(dt_obj)
+                values.add(dt_local)
             except (ValueError, TypeError):
                 continue
+        return values
+
+    def timezone_parse(self, values):
+        for v in values:
+            try:
+                tz = pytz.timezone(v)
+                values.remove(v)
+                values.add(tz)
+            except:
+                continue
+        return values
+
+    def timezone_format(self, values):
+        for v in values:
+            if isinstance(v, tzinfo):
+                tzname = v.tzname(None)
+                values.remove(v)
+                values.add(tzname)
         return values
 
     def sync_ymd(self):
@@ -204,7 +227,10 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
         values = self._meta('-g', meta_key).splitlines()
         return_value = set(values)
 
-        self.datetime_parse(return_value)
+        if meta_key == 'datetime':
+            self.datetime_parse(return_value)
+        elif meta_key == 'timezone':
+            self.timezone_parse(return_value)
 
         if len(return_value) == 1:
             return return_value.pop()
@@ -218,8 +244,12 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
         if not isinstance(old_value, set):
             old_value = {old_value}
 
-        self.datetime_format(value)
-        self.datetime_format(old_value)
+        if meta_key == 'datetime':
+            self.datetime_format(value)
+            self.datetime_format(old_value)
+        elif meta_key == 'timezone':
+            self.timezone_format(value)
+            self.timezone_format(old_value)
 
         cmds = []
         for v in value - old_value:
