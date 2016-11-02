@@ -174,17 +174,31 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
         self._meta = functools.partial(
             annex._annex, 'metadata', '--key', key)
 
+    @staticmethod
+    def datetime_format(values):
+        for v in values:
+            if isinstance(v, datetime):
+                dt_str = v.strftime('%Y-%m-%d@%H-%M-%S')
+                values.remove(v)
+                values.add(dt_str)
+        return values
+
+    @staticmethod
+    def datetime_parse(values):
+        for v in values:
+            try:
+                dt_obj = datetime.strptime(v, '%Y-%m-%d@%H-%M-%S')
+                values.remove(v)
+                values.add(dt_obj)
+            except (ValueError, TypeError):
+                continue
+        return values
+
     def __getitem__(self, meta_key):
         values = self._meta('-g', meta_key).splitlines()
         return_value = set(values)
 
-        for v in return_value:
-            try:
-                dt_obj = datetime.strptime(v, '%Y-%m-%d@%H-%M-%S')
-                return_value.remove(v)
-                return_value.add(dt_obj)
-            except (ValueError, TypeError):
-                continue
+        self.datetime_parse(return_value)
 
         if len(return_value) == 1:
             return return_value.pop()
@@ -198,11 +212,8 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
         if not isinstance(old_value, set):
             old_value = {old_value}
 
-        for v in value:
-            if isinstance(v, datetime):
-                dt_str = v.strftime('%Y-%m-%d@%H-%M-%S')
-                value.remove(v)
-                value.add(dt_str)
+        self.datetime_format(value)
+        self.datetime_format(old_value)
 
         cmds = []
         for v in value - old_value:
