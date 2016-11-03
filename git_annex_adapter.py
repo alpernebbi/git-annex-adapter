@@ -188,6 +188,8 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
     def datetime_parse(self, values, timezone=None):
         if not timezone:
             timezone = self['timezone']
+        if not timezone:
+            timezone = pytz.utc
         for v in values:
             try:
                 dt_obj = datetime.strptime(v, '%Y-%m-%d@%H-%M-%S')
