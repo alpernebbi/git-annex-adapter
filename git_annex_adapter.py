@@ -109,6 +109,10 @@ class GitAnnex(collections.abc.Mapping):
             print("Initializing git-annex at {}".format(repo.path))
             self._annex('init', 'albumin')
 
+        self._metadata_start()
+        self._calckey_start()
+        self._fromkey_start()
+
     def import_(self, path, duplicate=True):
         if os.path.basename(path) in os.listdir(self.repo.path):
             raise ValueError('Import path basename conflict')
@@ -116,14 +120,69 @@ class GitAnnex(collections.abc.Mapping):
         if duplicate: command.append('--duplicate')
         return self._annex(*command)
 
-    def calckey(self, file_path):
-        return self._annex('calckey', file_path).rstrip()
-
-    def fromkey(self, key, file_path):
-        return self._annex('fromkey', key, file_path)
-
     def lookupkey(self, file_path):
         return self._annex('lookupkey', file_path)
+
+    def _calckey_start(self):
+        self._calckey = subprocess.Popen(
+            ["git", "annex", "calckey", "--batch"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            cwd=self.repo.path,
+        )
+
+    @property
+    def _calckey_running(self):
+        return self._calckey and self._calckey.poll() is None
+
+    def _calckey_terminate(self, kill=False):
+        self._calckey.terminate()
+        try:
+            self._calckey.wait(5)
+        except subprocess.TimeoutExpired:
+            if kill:
+                self._calckey.kill()
+            else:
+                raise
+
+    def calckey(self, file_path):
+        while not self._calckey_running:
+            print('Restarting calckey...')
+            self._calckey_start()
+        print(file_path, file=self._calckey.stdin, flush=True)
+        return self._calckey.stdout.readline().rstrip()
+
+    def _fromkey_start(self):
+        self._fromkey = subprocess.Popen(
+            ["git", "annex", "fromkey"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            cwd=self.repo.path,
+        )
+
+    @property
+    def _fromkey_running(self):
+        return self._fromkey and self._fromkey.poll() is None
+
+    def _fromkey_terminate(self, kill=False):
+        self._fromkey.terminate()
+        try:
+            self._fromkey.wait(5)
+        except subprocess.TimeoutExpired:
+            if kill:
+                self._fromkey.kill()
+            else:
+                raise
+
+    def fromkey(self, key, file_path):
+        while not self._fromkey_running:
+            print('Restarting fromkey...')
+            self._fromkey_start()
+        print(key, file_path, file=self._fromkey.stdin, flush=True)
 
     @property
     def keys(self):
@@ -136,6 +195,39 @@ class GitAnnex(collections.abc.Mapping):
         jsons = self._annex('metadata', '--json').splitlines()
         meta_list = [json.loads(json_) for json_ in jsons]
         return {meta['file']: meta['key'] for meta in meta_list}
+
+    def _metadata_start(self):
+        self._metadata = subprocess.Popen(
+            ["git", "annex", "metadata", "--batch", "--json"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            cwd=self.repo.path,
+        )
+
+    @property
+    def _metadata_running(self):
+        return self._metadata and self._metadata.poll() is None
+
+    def _metadata_terminate(self, kill=False):
+        self._metadata.terminate()
+        try:
+            self._metadata.wait(5)
+        except subprocess.TimeoutExpired:
+            if kill:
+                self._metadata.kill()
+            else:
+                raise
+
+    def _metadata_query(self, **query):
+        while not self._metadata_running:
+            print('Restarting metadata...')
+            self._metadata_start()
+        json_ = json.dumps(query)
+        print(json_, file=self._metadata.stdin, flush=True)
+        response = self._metadata.stdout.readline()
+        return json.loads(response)
 
     def __getitem__(self, key):
         return GitAnnexMetadata(self, key)
@@ -157,8 +249,10 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
     def __init__(self, annex, key):
         self.key = key
         self.annex = annex
-        self._meta = functools.partial(
-            annex._annex, 'metadata', '--key', key)
+
+    def _query(self, **fields):
+        return self.annex._metadata_query(
+            key=self.key, fields=fields)['fields']
 
     def datetime_format(self, values):
         for v in values:
@@ -203,18 +297,17 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
                 values.add(tzname)
         return values
 
-    def sync_ymd(self):
-        dt = self['datetime']
-        self['year'] = dt.strftime('%Y')
-        self['month'] = dt.strftime('%m')
-        self['day'] = dt.strftime('%d')
-
     def __getitem__(self, meta_key):
-        values = self._meta('-g', meta_key).splitlines()
+        fields = self._query()
+        values = fields.get(meta_key, [])
         return_value = set(values)
 
         if meta_key == 'datetime':
-            self.datetime_parse(return_value)
+            try:
+                timezone = pytz.timezone(fields['timezone'])
+            except:
+                timezone = None
+            self.datetime_parse(return_value, timezone=timezone)
         elif meta_key.endswith('lastchanged'):
             self.datetime_parse(return_value, timezone=pytz.utc)
         elif meta_key == 'timezone':
@@ -229,41 +322,27 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
         if meta_key.endswith('lastchanged'):
             raise KeyError(meta_key)
 
-        old_value = self[meta_key]
         if not isinstance(value, set):
             value = {value}
-        if not isinstance(old_value, set):
-            old_value = {old_value}
 
         if meta_key == 'datetime':
             self.datetime_format(value)
-            self.datetime_format(old_value)
         elif meta_key == 'timezone':
             self.timezone_format(value)
-            self.timezone_format(old_value)
 
-        cmds = []
-        for v in value - old_value:
-            cmds += ['-s', '{}+={}'.format(meta_key, v)]
-        for v in old_value - value:
-            cmds += ['-s', '{}-={}'.format(meta_key, v)]
-        self._meta(*cmds)
-
+        fields = self._query(**{meta_key:list(value)})
         if meta_key == 'datetime':
-            self.sync_ymd()
+            y, m, d = fields[meta_key][0].split('@')[0].split('-')
+            self._query(year=y, month=m, day=d)
 
     def __delitem__(self, meta_key):
-        self._meta('-r', meta_key)
-        if meta_key == 'datetime':
-            self.sync_ymd()
+        self._query(**{meta_key: []})
 
     def __contains__(self, meta_key):
-        return self[meta_key] > set()
+        return meta_key in self._query()
 
     def __iter__(self):
-        json_ = self._meta('--json')
-        fields = json.loads(json_)['fields']
-        for field in fields.keys():
+        for field in self._query().keys():
             if not field.endswith('lastchanged'):
                 yield field
 
