@@ -151,10 +151,7 @@ class GitAnnex(collections.abc.Mapping):
         return {meta['file']: meta['key'] for meta in meta_list}
 
     def __getitem__(self, key):
-        if key in self.keys:
-            return GitAnnexMetadata(self, key)
-        else:
-            raise KeyError("Key {} not in annex.".format(key))
+        return GitAnnexMetadata(self, key)
 
     def __contains__(self, key):
         return key in self.keys
