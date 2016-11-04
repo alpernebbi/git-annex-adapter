@@ -51,6 +51,12 @@ class GitRepo:
                 '    {}\n    in {}'.format(branch_list, self.path))
         return tuple(branch_list)
 
+    def add(self, path):
+        return self._git('add', path)
+
+    def rm(self, path):
+        return self._git('rm', '-rf', path)
+
     def checkout(self, branch, new_branch=True):
         command = ['checkout', branch]
         if new_branch and branch not in self.branches:
@@ -70,31 +76,6 @@ class GitRepo:
         command = ['stash']
         if pop: command.append('pop')
         return self._git(*command)
-
-    def move(self, src, dest, overwrite=False, merge=True):
-        abs_src = os.path.join(self.path, src)
-        abs_dest = os.path.join(self.path, dest)
-
-        if os.path.isdir(abs_src) and os.path.isdir(abs_dest) and merge:
-            for src_ in files_in(abs_src, relative=self.path):
-                dest_ = os.path.join(dest, os.path.relpath(src_, src))
-                self.move(src_, dest_, overwrite=overwrite)
-            return
-
-        if os.path.isfile(abs_dest):
-            if os.path.samefile(abs_src, abs_dest) or overwrite:
-                self._git('rm', dest)
-            else:
-                raise ValueError(
-                    "Destination {} already exists.".format(dest))
-
-        abs_dest_dir = os.path.dirname(abs_dest)
-        os.makedirs(abs_dest_dir, exist_ok=True)
-        self._git('mv', src, dest)
-
-        abs_src_dir = os.path.dirname(abs_src)
-        if not os.listdir(abs_src_dir):
-            os.removedirs(abs_src_dir)
 
     @property
     def tree_hash(self):
@@ -137,6 +118,12 @@ class GitAnnex(collections.abc.Mapping):
 
     def calckey(self, file_path):
         return self._annex('calckey', file_path).rstrip()
+
+    def fromkey(self, key, file_path):
+        return self._annex('fromkey', key, file_path)
+
+    def lookupkey(self, file_path):
+        return self._annex('lookupkey', file_path)
 
     @property
     def keys(self):
