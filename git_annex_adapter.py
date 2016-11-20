@@ -153,17 +153,29 @@ class GitAnnex(collections.abc.Mapping):
         else:
             return rel_path
 
-    @property
-    def keys(self):
-        jsons = self._annex('metadata', '--all', '--json').splitlines()
-        meta_list = [json.loads(json_) for json_ in jsons]
-        return {meta['key'] for meta in meta_list}
+    def metadata(self, all_keys=False):
+        try:
+            jsons = self._annex(
+                'metadata', '--json', ('--all' if all_keys else '')
+            ).splitlines()
+            metadata = [json.loads(json_) for json_ in jsons]
+            return metadata
+        except subprocess.CalledProcessError as err:
+            return []
 
-    @property
+    def keys(self, absent=False):
+        all_meta = self.metadata(all_keys=True)
+        all_keys = {meta['key'] for meta in all_meta}
+        if absent:
+            file_meta = self.metadata()
+            file_keys = {meta['key'] for meta in file_meta}
+            return all_keys - file_keys
+        else:
+            return all_keys
+
     def files(self):
-        jsons = self._annex('metadata', '--json').splitlines()
-        meta_list = [json.loads(json_) for json_ in jsons]
-        return {meta['file']: meta['key'] for meta in meta_list}
+        file_meta = self.metadata()
+        return {meta['file'] for meta in file_meta}
 
     def __getitem__(self, key):
         return GitAnnexMetadata(self, key)
