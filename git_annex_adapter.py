@@ -18,7 +18,7 @@ class GitRepo:
         if not os.path.isdir(os.path.join(path, '.git')):
             print("Initializing git repo at {}".format(path))
             git('init')
-            git('checkout', 'master')
+            git('checkout', '-b', 'master')
             git('commit', '-m', 'Initialize repo', '--allow-empty')
 
     def __init__(self, path, create=False):
@@ -109,11 +109,11 @@ class GitAnnex(collections.abc.Mapping):
         annex = RepeatedProcess('git', 'annex', workdir=path)
         if not os.path.isdir(os.path.join(path, '.git', 'annex')):
             print("Initializing git-annex at {}".format(path))
-            annex('init', description)
+            annex('init', description if description else '')
 
     def __init__(self, repo, create=False):
         if create:
-            self.init_path(self.repo.path)
+            self.init_path(repo.path)
 
         self.repo = repo
         self._annex = RepeatedProcess(
