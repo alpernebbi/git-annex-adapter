@@ -293,7 +293,7 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
         len([x for x in self])
 
     def __repr__(self):
-        repr_ = 'GitAnnexFileMetadata(key={!r}, path={!r})'
+        repr_ = 'GitAnnexMetadata(key={!r}, path={!r})'
         return repr_.format(self.key, self.annex.repo.path)
 
 
@@ -308,6 +308,10 @@ class RepeatedProcess:
             universal_newlines=True,
             cwd=self._workdir,
         )
+
+    def __repr__(self):
+        repr_ = 'RepeatedProcess(prefix={!r}, workdir={!r})'
+        return repr_.format(self._prefix, self._workdir)
 
 
 class BatchProcess:
@@ -353,3 +357,7 @@ class BatchProcess:
         print(query, file=self._process.stdin, flush=True)
         response = self._process.stdout.readline().strip()
         return response if query_line else json.loads(response)
+
+    def __repr__(self):
+        repr_ = 'BatchProcess(cmd={!r}, cwd={!r}, process={!r})'
+        return repr_.format(self._command, self._workdir, self._process)
