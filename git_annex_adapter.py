@@ -165,7 +165,7 @@ class GitAnnex(collections.abc.Mapping):
         return {meta['file'] for meta in file_meta}
 
     def fields(self):
-        metadata = self.metadata(all=True)
+        metadata = self.metadata(all_keys=True)
         fields = [meta.get('fields', {}) for meta in metadata]
         return filter(
             lambda f: not f.endswith('lastchanged'),
@@ -176,13 +176,13 @@ class GitAnnex(collections.abc.Mapping):
         return GitAnnexMetadata(self, key)
 
     def __contains__(self, key):
-        return key in self.keys
+        return key in self.keys()
 
     def __iter__(self):
-        yield from self.keys
+        yield from self.keys()
 
     def __len__(self):
-        return len(self.keys)
+        return len(self.keys())
 
     def __repr__(self):
         return 'GitAnnex(repo={!r})'.format(self.repo)
