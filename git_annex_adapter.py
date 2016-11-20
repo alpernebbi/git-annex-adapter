@@ -209,6 +209,13 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
         else:
             return new_fields
 
+        for field, value in fields.items():
+            new_value = new_fields.get(field, [])
+            if set(new_value) != set(value):
+                raise KeyError(field)
+        else:
+            return new_fields
+
     def locate(self, absolute=False):
         return self.annex.processes.contentlocation(
             self.key, absolute=absolute
