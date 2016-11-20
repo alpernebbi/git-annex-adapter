@@ -347,13 +347,3 @@ class BatchProcess:
         print(query, file=self._process.stdin, flush=True)
         response = self._process.stdout.readline().strip()
         return response if query_line else json.loads(response)
-
-
-def files_in(dir_path, relative=False):
-    exclude = ['.git']
-    for root, dirs, files in os.walk(dir_path, topdown=True):
-        dirs[:] = [d for d in dirs if d not in exclude]
-        if relative:
-            root = os.path.relpath(root, start=relative)
-        for f in files:
-            yield os.path.join(root, f)
