@@ -7,21 +7,26 @@ from argparse import Namespace
 
 
 class GitRepo:
-    def __init__(self, path):
+    @staticmethod
+    def init_path(path):
+        git = RepeatedProcess('git', workdir=path)
+
+        if not os.path.isdir(path):
+            print("Creating directory {}".format(path))
+            os.makedirs(path)
+
+        if not os.path.isdir(os.path.join(path, '.git')):
+            print("Initializing git repo at {}".format(path))
+            git('init')
+            git('checkout', 'master')
+            git('commit', '-m', 'Initialize repo', '--allow-empty')
+
+    def __init__(self, path, create=False):
+        if create:
+            self.init_path(path)
+
         self.path = path
         self._git = RepeatedProcess('git', workdir=self.path)
-
-        if not os.path.isdir(self.path):
-            print("Creating directory {}".format(self.path))
-            os.makedirs(self.path)
-
-        if not os.path.isdir(os.path.join(self.path, '.git')):
-            print("Initializing git repo at {}".format(self.path))
-            self._git('init')
-
-        if 'master' not in self.branches:
-            self.checkout('master')
-            self.commit('Initialize repo', allow_empty=True)
 
     @property
     def status(self):
@@ -79,13 +84,13 @@ class GitRepo:
 
 
 class GitAnnexRepo(GitRepo):
-    def __init__(self, path):
-        super().__init__(path)
-        self.annex = GitAnnex(self)
+    def __init__(self, path, create=False):
+        super().__init__(path, create=create)
+        self.annex = GitAnnex(self, create=create)
 
     @classmethod
-    def make_annex(cls, repo):
-        repo.annex = GitAnnex(repo)
+    def make_annex(cls, repo, create=False):
+        repo.annex = GitAnnex(repo, create=create)
         repo.__class__ = cls
 
     def __repr__(self):
@@ -93,16 +98,24 @@ class GitAnnexRepo(GitRepo):
 
 
 class GitAnnex(collections.abc.Mapping):
-    def __init__(self, repo):
+    @staticmethod
+    def init_path(path, description=None):
+        GitRepo.init_path(path)
+
+        annex = RepeatedProcess('git', 'annex', workdir=path)
+        if not os.path.isdir(os.path.join(path, '.git', 'annex')):
+            print("Initializing git-annex at {}".format(path))
+            annex('init', description)
+
+    def __init__(self, repo, create=False):
+        if create:
+            self.init_path(self.repo.path)
+
         self.repo = repo
         self._annex = RepeatedProcess(
             'git', 'annex',
             workdir=repo.path
         )
-
-        if not os.path.isdir(os.path.join(repo.path, '.git', 'annex')):
-            print("Initializing git-annex at {}".format(repo.path))
-            self._annex('init', 'albumin')
 
         self.processes = Namespace()
         batch_processes = {
