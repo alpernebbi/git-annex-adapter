@@ -227,11 +227,9 @@ class GitAnnex(collections.abc.Mapping):
     def __getitem__(self, map_key):
         if map_key in self.files(cached=True):
             key, file = self.lookupkey(map_key), map_key
-            print(key, file)
 
         elif map_key in self.keys(cached=True):
             key, file = map_key, None
-            print(key, file)
 
         else:
             raise KeyError(map_key)
