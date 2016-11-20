@@ -189,8 +189,9 @@ class GitAnnex(collections.abc.Mapping):
 
 
 class GitAnnexMetadata(collections.abc.MutableMapping):
-    def __init__(self, annex, key):
+    def __init__(self, annex, key, file=None):
         self.key = key
+        self.file = file
         self.annex = annex
 
     def _query(self, **fields):
@@ -207,6 +208,8 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
     def __getitem__(self, meta_key):
         if meta_key == 'key':
             return [self.key]
+        if meta_key == 'file':
+            return [self.file]
         values = self._fields().get(meta_key, [])
         return values
 
