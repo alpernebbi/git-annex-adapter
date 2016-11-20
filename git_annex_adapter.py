@@ -26,7 +26,7 @@ class GitRepo:
             self.init_path(path)
 
         git = RepeatedProcess('git', workdir=path)
-        root_path = git('git', 'rev-parse', '--show-toplevel').strip()
+        root_path = git('rev-parse', '--show-toplevel').strip()
 
         git._workdir = root_path
         self.path = root_path
