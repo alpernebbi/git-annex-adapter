@@ -25,8 +25,12 @@ class GitRepo:
         if create:
             self.init_path(path)
 
-        self.path = path
-        self._git = RepeatedProcess('git', workdir=self.path)
+        git = RepeatedProcess('git', workdir=path)
+        root_path = git('git', 'rev-parse', '--show-toplevel').strip()
+
+        git._workdir = root_path
+        self.path = root_path
+        self._git = git
 
     @property
     def status(self):
