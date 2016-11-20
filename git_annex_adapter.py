@@ -3,14 +3,18 @@ import subprocess
 import os
 import json
 import collections.abc
+from argparse import Namespace
+
 from datetime import datetime
 from datetime import tzinfo
+
 import pytz
 
 
 class GitRepo:
     def __init__(self, path):
         self.path = path
+        self._git = RepeatedProcess('git', workdir=self.path)
 
         if not os.path.isdir(self.path):
             print("Creating directory {}".format(self.path))
@@ -23,13 +27,6 @@ class GitRepo:
         if 'master' not in self.branches:
             self.checkout('master')
             self.commit('Initialize repo', allow_empty=True)
-
-    def _git(self, *commands):
-        return subprocess.check_output(
-            ('git', *commands),
-            universal_newlines=True,
-            cwd=self.path,
-        )
 
     @property
     def status(self):
@@ -103,15 +100,35 @@ class GitAnnexRepo(GitRepo):
 class GitAnnex(collections.abc.Mapping):
     def __init__(self, repo):
         self.repo = repo
-        self._annex = functools.partial(repo._git, 'annex')
+        self._annex = RepeatedProcess(
+            'git', 'annex',
+            workdir=repo.path
+        )
 
         if not os.path.isdir(os.path.join(repo.path, '.git', 'annex')):
             print("Initializing git-annex at {}".format(repo.path))
             self._annex('init', 'albumin')
 
-        self._metadata_start()
-        self._calckey_start()
-        self._fromkey_start()
+        self.processes = Namespace()
+        self.processes.metadata = BatchProcess(
+            "git", "annex", "metadata", "--batch", "--json",
+            workdir=repo.path
+        )
+
+        self.processes.calckey = BatchProcess(
+            "git", "annex", "calckey", "--batch",
+            workdir=repo.path
+        )
+
+        self.processes.fromkey = BatchProcess(
+            "git", "annex", "fromkey", "--batch",
+            workdir=repo.path
+        )
+
+        self.processes.lookupkey = BatchProcess(
+            "git", "annex", "lookupkey", "--batch",
+            workdir=repo.path
+        )
 
     def import_(self, path, duplicate=True):
         if os.path.basename(path) in os.listdir(self.repo.path):
@@ -120,69 +137,14 @@ class GitAnnex(collections.abc.Mapping):
         if duplicate: command.append('--duplicate')
         return self._annex(*command)
 
-    def lookupkey(self, file_path):
-        return self._annex('lookupkey', file_path)
-
-    def _calckey_start(self):
-        self._calckey = subprocess.Popen(
-            ["git", "annex", "calckey", "--batch"],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-            cwd=self.repo.path,
-        )
-
-    @property
-    def _calckey_running(self):
-        return self._calckey and self._calckey.poll() is None
-
-    def _calckey_terminate(self, kill=False):
-        self._calckey.terminate()
-        try:
-            self._calckey.wait(5)
-        except subprocess.TimeoutExpired:
-            if kill:
-                self._calckey.kill()
-            else:
-                raise
-
     def calckey(self, file_path):
-        while not self._calckey_running:
-            print('Restarting calckey...')
-            self._calckey_start()
-        print(file_path, file=self._calckey.stdin, flush=True)
-        return self._calckey.stdout.readline().rstrip()
-
-    def _fromkey_start(self):
-        self._fromkey = subprocess.Popen(
-            ["git", "annex", "fromkey"],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-            cwd=self.repo.path,
-        )
-
-    @property
-    def _fromkey_running(self):
-        return self._fromkey and self._fromkey.poll() is None
-
-    def _fromkey_terminate(self, kill=False):
-        self._fromkey.terminate()
-        try:
-            self._fromkey.wait(5)
-        except subprocess.TimeoutExpired:
-            if kill:
-                self._fromkey.kill()
-            else:
-                raise
+        return self.processes.calckey(file_path)
 
     def fromkey(self, key, file_path):
-        while not self._fromkey_running:
-            print('Restarting fromkey...')
-            self._fromkey_start()
-        print(key, file_path, file=self._fromkey.stdin, flush=True)
+        return self.processes.fromkey(key, file_path)
+
+    def lookupkey(self, file_path):
+        return self.processes.lookupkey(file_path)
 
     @property
     def keys(self):
@@ -195,39 +157,6 @@ class GitAnnex(collections.abc.Mapping):
         jsons = self._annex('metadata', '--json').splitlines()
         meta_list = [json.loads(json_) for json_ in jsons]
         return {meta['file']: meta['key'] for meta in meta_list}
-
-    def _metadata_start(self):
-        self._metadata = subprocess.Popen(
-            ["git", "annex", "metadata", "--batch", "--json"],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-            cwd=self.repo.path,
-        )
-
-    @property
-    def _metadata_running(self):
-        return self._metadata and self._metadata.poll() is None
-
-    def _metadata_terminate(self, kill=False):
-        self._metadata.terminate()
-        try:
-            self._metadata.wait(5)
-        except subprocess.TimeoutExpired:
-            if kill:
-                self._metadata.kill()
-            else:
-                raise
-
-    def _metadata_query(self, **query):
-        while not self._metadata_running:
-            print('Restarting metadata...')
-            self._metadata_start()
-        json_ = json.dumps(query)
-        print(json_, file=self._metadata.stdin, flush=True)
-        response = self._metadata.stdout.readline()
-        return json.loads(response)
 
     def __getitem__(self, key):
         return GitAnnexMetadata(self, key)
@@ -251,8 +180,9 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
         self.annex = annex
 
     def _query(self, **fields):
-        return self.annex._metadata_query(
-            key=self.key, fields=fields)['fields']
+        return self.annex.processes.metadata(
+            key=self.key, fields=fields
+        )['fields']
 
     def datetime_format(self, values):
         for v in values:
@@ -352,6 +282,64 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
     def __repr__(self):
         repr_ = 'GitAnnexFileMetadata(key={!r}, path={!r})'
         return repr_.format(self.key, self.annex.repo.path)
+
+
+class RepeatedProcess:
+    def __init__(self, *prefix_command, workdir=None):
+        self._prefix = prefix_command
+        self._workdir = workdir
+
+    def __call__(self, *commands):
+        return subprocess.check_output(
+            (*self._prefix, *commands),
+            universal_newlines=True,
+            cwd=self._workdir,
+        )
+
+
+class BatchProcess:
+    def __init__(self, *batch_command, workdir=None):
+        self._command = batch_command
+        self._workdir = workdir
+        self._process = self.start()
+
+    def start(self):
+        process = subprocess.Popen(
+            self._command,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            cwd=self._workdir,
+        )
+        return process
+
+    def running(self):
+        return self._process and self._process.poll() is None
+
+    def terminate(self, kill=False):
+        self._process.terminate()
+        try:
+            self._process.wait(5)
+        except subprocess.TimeoutExpired:
+            if kill:
+                self._process.kill()
+            else:
+                raise
+
+    def restart(self):
+        if self.running():
+            self.terminate()
+        self._process = self.start()
+
+    def __call__(self, query_line=None, **query_object):
+        while not self.running():
+            self._process = self.start()
+
+        query = query_line or json.dumps(query_object)
+        print(query, file=self._process.stdin, flush=True)
+        response = self._process.stdout.readline().strip()
+        return response if query_line else json.loads(response)
 
 
 def files_in(dir_path, relative=False):
