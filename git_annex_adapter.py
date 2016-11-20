@@ -196,24 +196,31 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
         self.query = functools.partial(
             self.annex.processes.metadata, key=self.key
         )
+        self.fields_cache = None
 
     def fields(self, **fields):
+        if self.fields_cache and not fields:
+            return self.fields_cache
+
         new_fields = self.query(fields=fields).get('fields', {})
 
         for field, value in fields.items():
             new_value = new_fields.get(field, [])
             if set(new_value) != set(value):
                 self.annex.processes.metadata.restart()
-                self.query(fields=fields).get('fields', {})
+                new_fields = self.query(fields=fields).get('fields', {})
                 break
         else:
+            self.fields_cache = new_fields
             return new_fields
 
         for field, value in fields.items():
             new_value = new_fields.get(field, [])
             if set(new_value) != set(value):
+                self.fields_cache = None
                 raise KeyError(field)
         else:
+            self.fields_cache = new_fields
             return new_fields
 
     def locate(self, absolute=False):
