@@ -195,17 +195,28 @@ class GitAnnex(collections.abc.Mapping):
             set.union(*map(set, fields + [{}]))
         )
 
-    def __getitem__(self, key):
-        return GitAnnexMetadata(self, key)
+    def __getitem__(self, map_key):
+        if map_key in self.files(cached=True):
+            key, file = self.lookupkey(map_key), map_key
+            print(key, file)
 
-    def __contains__(self, key):
-        return key in self.keys()
+        elif map_key in self.keys(cached=True):
+            key, file = map_key, None
+            print(key, file)
+
+        else:
+            raise KeyError(map_key)
+
+        return GitAnnexMetadata(self, key=key, file=file)
+
+    def __contains__(self, map_key):
+        return map_key in self.keys(cached=True)
 
     def __iter__(self):
-        yield from self.keys()
+        yield from self.keys(cached=True)
 
     def __len__(self):
-        return len(self.keys())
+        return len(self.keys(cached=True))
 
     def __repr__(self):
         return 'GitAnnex(repo={!r})'.format(self.repo)
