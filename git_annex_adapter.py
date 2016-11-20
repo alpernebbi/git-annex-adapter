@@ -287,9 +287,11 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
             return new_fields
 
     def locate(self, absolute=False):
-        return self.annex.processes.contentlocation(
-            self.key, absolute=absolute
-        )
+        rel_path = self.annex.processes.contentlocation(self.key)
+        if absolute:
+            return os.path.join(self.annex.repo.path, rel_path)
+        else:
+            return rel_path
 
     def __getitem__(self, meta_key):
         if meta_key == 'key':
