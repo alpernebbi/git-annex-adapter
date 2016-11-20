@@ -339,11 +339,11 @@ class BatchProcess:
             self.terminate()
         self._process = self.start()
 
-    def __call__(self, query_line=None, **query_object):
+    def __call__(self, *query_line, **query_object):
         while not self.running():
             self._process = self.start()
 
         query = query_line or json.dumps(query_object)
-        print(query, file=self._process.stdin, flush=True)
+        print(*query, file=self._process.stdin, flush=True)
         response = self._process.stdout.readline().strip()
         return response if query_line else json.loads(response)
