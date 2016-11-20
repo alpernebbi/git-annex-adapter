@@ -110,25 +110,17 @@ class GitAnnex(collections.abc.Mapping):
             self._annex('init', 'albumin')
 
         self.processes = Namespace()
-        self.processes.metadata = BatchProcess(
-            "git", "annex", "metadata", "--batch", "--json",
-            workdir=repo.path
-        )
+        batch_processes = {
+            'metadata': ('metadata', '--batch', '--json'),
+            'calckey': ('calckey', '--batch'),
+            'lookupkey': ('lookupkey', '--batch'),
+            'contentlocation': ('contentlocation', '--batch')
+        }
 
-        self.processes.calckey = BatchProcess(
-            "git", "annex", "calckey", "--batch",
-            workdir=repo.path
-        )
-
-        self.processes.lookupkey = BatchProcess(
-            "git", "annex", "lookupkey", "--batch",
-            workdir=repo.path
-        )
-
-        self.processes.contentlocation = BatchProcess(
-            'git', 'annex', 'contentlocation', '--batch',
-            workdir=self.repo.path
-        )
+        for proc, cmd in batch_processes.items():
+            vars(self.processes)[proc] = BatchProcess(
+                'git', 'annex', *cmd, workdir=repo.path
+            )
 
     def import_(self, path, duplicate=True):
         if os.path.basename(path) in os.listdir(self.repo.path):
