@@ -58,6 +58,31 @@ class GitRepo:
     def rm(self, path):
         return self._git('rm', '-rf', path)
 
+    def move(self, src, dest, overwrite=False, merge=True):
+        abs_src = os.path.join(self.path, src)
+        abs_dest = os.path.join(self.path, dest)
+
+        if os.path.isdir(abs_src) and os.path.isdir(abs_dest) and merge:
+            for src_ in files_in(abs_src, relative=self.path):
+                dest_ = os.path.join(dest, os.path.relpath(src_, src))
+                self.move(src_, dest_, overwrite=overwrite)
+            return
+
+        if os.path.isfile(abs_dest):
+            if os.path.samefile(abs_src, abs_dest) or overwrite:
+                self._git('rm', dest)
+            else:
+                raise ValueError(
+                    "Destination {} already exists.".format(dest))
+
+        abs_dest_dir = os.path.dirname(abs_dest)
+        os.makedirs(abs_dest_dir, exist_ok=True)
+        self._git('mv', src, dest)
+
+        abs_src_dir = os.path.dirname(abs_src)
+        if not os.listdir(abs_src_dir):
+            os.removedirs(abs_src_dir)
+
     def checkout(self, branch, new_branch=True):
         command = ['checkout', branch]
         if new_branch and branch not in self.branches:
@@ -361,3 +386,13 @@ class BatchProcess:
     def __repr__(self):
         repr_ = 'BatchProcess(cmd={!r}, cwd={!r}, process={!r})'
         return repr_.format(self._command, self._workdir, self._process)
+
+
+def files_in(dir_path, relative=False):
+    exclude = ['.git']
+    for root, dirs, files in os.walk(dir_path, topdown=True):
+        dirs[:] = [d for d in dirs if d not in exclude]
+        if relative:
+            root = os.path.relpath(root, start=relative)
+        for f in files:
+            yield os.path.join(root, f)

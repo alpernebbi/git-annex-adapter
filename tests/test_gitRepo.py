@@ -84,7 +84,6 @@ class TestGitRepo(unittest.TestCase):
         assert repo.tree_hash == \
             '149cb6cb6b7ffa7508ce5b4936f307de2acdbe17'
 
-    @unittest.skip('git-mv not implemented')
     @with_repo('repo-tars/two-files-extend.tar.gz')
     def test_git_move_free(self, repo):
         repo.move('b.txt', 'c.txt')
@@ -92,7 +91,6 @@ class TestGitRepo(unittest.TestCase):
         assert repo.tree_hash == \
             '433015e2412dce520e9117002d42f6b31a06a406'
 
-    @unittest.skip('git-mv not implemented')
     @with_repo('repo-tars/two-files-extend.tar.gz')
     def test_git_move_conflict(self, repo):
         repo.move('a.txt', 'b.txt', overwrite=True)
@@ -121,7 +119,6 @@ class TestGitAnnexRepo(unittest.TestCase):
         assert repo.annex.locate(key) == \
             '.git/annex/objects/q5/F4/{}/{}'.format(key, key)
 
-    @unittest.skip("git-mv not implemented")
     @with_repo('annex-tars/two-identical.tar.gz', annex=True)
     def test_git_move_same(self, repo):
         repo.move('a.txt', 'b.txt')
@@ -129,7 +126,6 @@ class TestGitAnnexRepo(unittest.TestCase):
         assert repo.tree_hash == \
             'bfbabae495c75f33ff22f262decf12d39ba79678'
 
-    @unittest.skip('git-mv not implemented')
     @with_repo(annex=True)
     @with_folder('data-tars/three-nested.tar.gz')
     def test_import(self, repo, temp_folder):
