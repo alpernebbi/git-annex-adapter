@@ -117,6 +117,8 @@ class GitAnnex(collections.abc.Mapping):
                 'git', 'annex', *cmd, workdir=repo.path
             )
 
+        self._meta_cache = [None, None]
+
     def import_(self, path, duplicate=True):
         if os.path.basename(path) in os.listdir(self.repo.path):
             raise ValueError('Import path basename conflict')
@@ -140,32 +142,40 @@ class GitAnnex(collections.abc.Mapping):
         else:
             return rel_path
 
-    def metadata(self, all_keys=False):
+    def clear_metadata_cache(self):
+        self._meta_cache = [None, None]
+
+    def metadata(self, all_keys=False, cached=False):
+        if cached and self._meta_cache[all_keys]:
+            return self._meta_cache[all_keys]
+
         try:
             jsons = self._annex(
                 'metadata', '--json', ('--all' if all_keys else '')
             ).splitlines()
             metadata = [json.loads(json_) for json_ in jsons]
+            self._meta_cache[all_keys] = metadata
             return metadata
         except subprocess.CalledProcessError as err:
+            self._meta_cache = [None, None]
             return []
 
-    def keys(self, absent=False):
-        all_meta = self.metadata(all_keys=True)
+    def keys(self, absent=False, cached=False):
+        all_meta = self.metadata(all_keys=True, cached=cached)
         all_keys = {meta['key'] for meta in all_meta}
         if absent:
-            file_meta = self.metadata()
+            file_meta = self.metadata(cached=cached)
             file_keys = {meta['key'] for meta in file_meta}
             return all_keys - file_keys
         else:
             return all_keys
 
-    def files(self):
-        file_meta = self.metadata()
+    def files(self, cached=False):
+        file_meta = self.metadata(cached=cached)
         return {meta['file'] for meta in file_meta}
 
-    def fields(self):
-        metadata = self.metadata(all_keys=True)
+    def fields(self, cached=False):
+        metadata = self.metadata(all_keys=True, cached=cached)
         fields = [meta.get('fields', {}) for meta in metadata]
         return filter(
             lambda f: not f.endswith('lastchanged'),
