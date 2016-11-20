@@ -5,11 +5,6 @@ import json
 import collections.abc
 from argparse import Namespace
 
-from datetime import datetime
-from datetime import tzinfo
-
-import pytz
-
 
 class GitRepo:
     def __init__(self, path):
@@ -203,69 +198,11 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
             key=self.key, fields=fields
         )['fields']
 
-    def datetime_format(self, values):
-        for v in values:
-            if isinstance(v, datetime):
-                v_utc = v.astimezone(pytz.utc)
-                dt_str = v_utc.strftime('%Y-%m-%d@%H-%M-%S')
-                values.remove(v)
-                values.add(dt_str)
-        return values
-
-    def datetime_parse(self, values, timezone=None):
-        if not timezone:
-            timezone = self['timezone']
-        if not timezone:
-            timezone = pytz.utc
-        for v in values:
-            try:
-                dt_obj = datetime.strptime(v, '%Y-%m-%d@%H-%M-%S')
-                dt_utc = pytz.utc.localize(dt_obj)
-                dt_local = dt_utc.astimezone(timezone)
-                values.remove(v)
-                values.add(dt_local)
-            except (ValueError, TypeError):
-                continue
-        return values
-
-    def timezone_parse(self, values):
-        for v in values:
-            try:
-                tz = pytz.timezone(v)
-                values.remove(v)
-                values.add(tz)
-            except:
-                continue
-        return values
-
-    def timezone_format(self, values):
-        for v in values:
-            if isinstance(v, tzinfo):
-                tzname = v.tzname(None)
-                values.remove(v)
-                values.add(tzname)
-        return values
-
     def __getitem__(self, meta_key):
         fields = self._query()
         values = fields.get(meta_key, [])
         return_value = set(values)
-
-        if meta_key == 'datetime':
-            try:
-                timezone = pytz.timezone(fields['timezone'])
-            except:
-                timezone = None
-            self.datetime_parse(return_value, timezone=timezone)
-        elif meta_key.endswith('lastchanged'):
-            self.datetime_parse(return_value, timezone=pytz.utc)
-        elif meta_key == 'timezone':
-            self.timezone_parse(return_value)
-
-        if len(return_value) == 1:
-            return return_value.pop()
-        else:
-            return return_value
+        return return_value
 
     def __setitem__(self, meta_key, value):
         if meta_key.endswith('lastchanged'):
@@ -273,16 +210,7 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
 
         if not isinstance(value, set):
             value = {value}
-
-        if meta_key == 'datetime':
-            self.datetime_format(value)
-        elif meta_key == 'timezone':
-            self.timezone_format(value)
-
-        fields = self._query(**{meta_key:list(value)})
-        if meta_key == 'datetime':
-            y, m, d = fields[meta_key][0].split('@')[0].split('-')
-            self._query(year=y, month=m, day=d)
+        self._query(**{meta_key: list(value)})
 
     def __delitem__(self, meta_key):
         self._query(**{meta_key: []})
