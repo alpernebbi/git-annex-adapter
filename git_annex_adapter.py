@@ -130,6 +130,11 @@ class GitAnnex(collections.abc.Mapping):
             workdir=repo.path
         )
 
+        self.processes.contentlocation = BatchProcess(
+            'git', 'annex', 'contentlocation', '--batch',
+            workdir=self.repo.path
+        )
+
     def import_(self, path, duplicate=True):
         if os.path.basename(path) in os.listdir(self.repo.path):
             raise ValueError('Import path basename conflict')
@@ -145,6 +150,13 @@ class GitAnnex(collections.abc.Mapping):
 
     def lookupkey(self, file_path):
         return self.processes.lookupkey(file_path)
+
+    def locate(self, key, absolute=False):
+        rel_path = self.processes.contentlocation(key)
+        if absolute:
+            return os.path.join(self.repo.path, rel_path)
+        else:
+            return rel_path
 
     @property
     def keys(self):
