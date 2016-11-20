@@ -120,11 +120,6 @@ class GitAnnex(collections.abc.Mapping):
             workdir=repo.path
         )
 
-        self.processes.fromkey = BatchProcess(
-            "git", "annex", "fromkey", "--batch",
-            workdir=repo.path
-        )
-
         self.processes.lookupkey = BatchProcess(
             "git", "annex", "lookupkey", "--batch",
             workdir=repo.path
@@ -146,7 +141,7 @@ class GitAnnex(collections.abc.Mapping):
         return self.processes.calckey(file_path)
 
     def fromkey(self, key, file_path):
-        return self.processes.fromkey(key, file_path)
+        return self._annex('fromkey', key, file_path)
 
     def lookupkey(self, file_path):
         return self.processes.lookupkey(file_path)
