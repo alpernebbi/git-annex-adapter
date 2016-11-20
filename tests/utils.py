@@ -29,9 +29,9 @@ def with_repo(tar_path=None, annex=False, param='repo'):
         @functools.wraps(func)
         @with_folder(tar_path, param='repo_path')
         def wrapper(*args, **kwargs):
-            repo = GitRepo(kwargs['repo_path'])
+            repo = GitRepo(kwargs['repo_path'], create=True)
             if annex:
-                GitAnnexRepo.make_annex(repo)
+                GitAnnexRepo.make_annex(repo, create=True)
             del kwargs['repo_path']
             kwargs[param] = repo
             try:
