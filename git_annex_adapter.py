@@ -169,6 +169,14 @@ class GitAnnex(collections.abc.Mapping):
         file_meta = self.metadata()
         return {meta['file'] for meta in file_meta}
 
+    def fields(self):
+        metadata = self.metadata(all=True)
+        fields = [meta.get('fields', {}) for meta in metadata]
+        return filter(
+            lambda f: not f.endswith('lastchanged'),
+            set.union(*map(set, fields + [{}]))
+        )
+
     def __getitem__(self, key):
         return GitAnnexMetadata(self, key)
 
