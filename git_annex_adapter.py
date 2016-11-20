@@ -194,32 +194,29 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
         self.annex = annex
 
     def _query(self, **fields):
-        return self.annex.processes.metadata(
-            key=self.key, fields=fields
-        )['fields']
+        return self.annex.processes.metadata(key=self.key, **fields)
+
+    def _fields(self, **fields):
+        return self._query(**fields).get('fields', {})
 
     def __getitem__(self, meta_key):
-        fields = self._query()
-        values = fields.get(meta_key, [])
-        return_value = set(values)
-        return return_value
+        if meta_key == 'key':
+            return [self.key]
+        values = self._fields().get(meta_key, [])
+        return values
 
     def __setitem__(self, meta_key, value):
-        if meta_key.endswith('lastchanged'):
-            raise KeyError(meta_key)
-
-        if not isinstance(value, set):
-            value = {value}
-        self._query(**{meta_key: list(value)})
+        if meta_key not in ['key', 'file']:
+            self._fields(**{meta_key: value})
 
     def __delitem__(self, meta_key):
-        self._query(**{meta_key: []})
+        self._fields(**{meta_key: []})
 
     def __contains__(self, meta_key):
-        return meta_key in self._query()
+        return meta_key in self._fields()
 
     def __iter__(self):
-        for field in self._query().keys():
+        for field in self._fields().keys():
             if not field.endswith('lastchanged'):
                 yield field
 
