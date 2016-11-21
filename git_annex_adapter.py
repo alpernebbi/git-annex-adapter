@@ -146,6 +146,8 @@ class GitAnnex(collections.abc.Mapping):
             workdir=repo.path
         )
 
+        self._annex('metadata', '--key', 'SHA256E-s0--0')
+
         self.processes = Namespace()
         batch_processes = {
             'metadata': ('metadata', '--batch', '--json'),
