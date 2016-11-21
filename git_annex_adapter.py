@@ -330,6 +330,7 @@ class RepeatedProcess:
     def __call__(self, *commands):
         return subprocess.check_output(
             (*self._prefix, *commands),
+            stderr=subprocess.PIPE,
             universal_newlines=True,
             cwd=self._workdir,
         )
