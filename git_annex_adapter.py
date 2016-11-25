@@ -327,7 +327,7 @@ class GitAnnexMetadata(collections.abc.MutableMapping):
                 yield field
 
     def __len__(self):
-        len([x for x in self])
+        return len([x for x in self])
 
     def __repr__(self):
         repr_ = 'GitAnnexMetadata(key={!r}, path={!r})'
