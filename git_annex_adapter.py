@@ -64,8 +64,16 @@ class GitRepo:
         abs_src = os.path.join(self.path, src)
         abs_dest = os.path.join(self.path, dest)
 
+        def files_in(dir_path):
+            exclude = ['.git']
+            for root, dirs, files in os.walk(dir_path, topdown=True):
+                dirs[:] = [d for d in dirs if d not in exclude]
+                relative_root = os.path.relpath(root, start=self.path)
+                for f in files:
+                    yield os.path.join(relative_root, f)
+
         if os.path.isdir(abs_src) and os.path.isdir(abs_dest) and merge:
-            for src_ in files_in(abs_src, relative=self.path):
+            for src_ in files_in(abs_src):
                 dest_ = os.path.join(dest, os.path.relpath(src_, src))
                 self.move(src_, dest_, overwrite=overwrite)
             return
@@ -392,12 +400,3 @@ class BatchProcess:
         repr_ = 'BatchProcess(cmd={!r}, cwd={!r}, process={!r})'
         return repr_.format(self._command, self._workdir, self._process)
 
-
-def files_in(dir_path, relative=False):
-    exclude = ['.git']
-    for root, dirs, files in os.walk(dir_path, topdown=True):
-        dirs[:] = [d for d in dirs if d not in exclude]
-        if relative:
-            root = os.path.relpath(root, start=relative)
-        for f in files:
-            yield os.path.join(root, f)
