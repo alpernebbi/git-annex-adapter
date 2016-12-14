@@ -20,40 +20,37 @@ Usage
 -----
 Create and wrap a repo::
 
-    >>> from git_annex_adapter import GitAnnexRepo
-    >>> repo = GitAnnexRepo('/path/to/repo', create=True)
-
-The created object represents the git repository.
-It has an ``annex`` attribute that wraps the git-annex functionality.
+    >>> from git_annex_adapter import GitAnnex
+    >>> annex = GitAnnex('/path/to/repo', create=True)
 
 Import a folder or a file into the annex::
 
-    >>> repo.annex.calckey('/path/to/file.txt')
+    >>> annex.calckey('/path/to/file.txt')
     'SHA256E-s17--2b9a58f3fe5d2eee4d7276831c1c9f7811b697ae4904f9db9090dda71cfcbe80.txt'
-    >>> repo.annex.import_('/path/to/file.txt')
+    >>> annex.import_('/path/to/file.txt')
 
 Get the backend key for the file in the annex::
 
-    >>> key = repo.annex.lookupkey('file.txt')
+    >>> key = annex.lookupkey('file.txt')
     >>> key
     'SHA256E-s17--2b9a58f3fe5d2eee4d7276831c1c9f7811b697ae4904f9db9090dda71cfcbe80.txt'
 
 Get the actual location of the file::
 
-    >>> repo.annex.locate(key, absolute=True)
+    >>> annex.locate(key, absolute=True)
     '/path/to/repo/.git/annex/objects/ZP/mq/.../...' # Not literal ellipses
 
 Get annexed keys or files::
 
-    >>> repo.annex.keys()
+    >>> annex.keys()
     {'SHA256E-s17--2b9a58f3fe5d2eee4d7276831c1c9f7811b697ae4904f9db9090dda71cfcbe80.txt'}
-    >>> repo.annex.files()
+    >>> annex.files()
     {'file.txt'}
 
 Access the git-annex metadata belonging to the file::
 
-    >>> file_metadata = repo.annex['file.txt']
-    >>> # file_metadata = repo.annex[key] works as well
+    >>> file_metadata = annex['file.txt']
+    >>> # file_metadata = annex[key] works as well
     >>> list(file_metadata.keys())
     ['month', 'tag', 'year']
 
@@ -88,7 +85,6 @@ Manipulate the metadata::
 Notes
 -----
 - Since the initial focus was on metadata functionality of git-annex, many other commands are not yet implemented.
-- Some git calls are also implemented, but git-annex calls are independent from them. Don't rely on these.
 - The ``key`` and ``file`` metadata fields are used internally, so they don't represent actual metadata.
 - Metadata that ends with ``lastchanged`` are git-annex internal timestamps. They are ignored when iterating fields.
 - ``metadata()``, ``keys()``, ``files()``, ``fields()`` functions are cached assuming there won't be external changes.
