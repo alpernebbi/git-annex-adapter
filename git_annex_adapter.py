@@ -61,12 +61,16 @@ class GitAnnex(collections.abc.Mapping):
             'metadata': ('metadata', '--batch', '--json'),
             'calckey': ('calckey', '--batch'),
             'lookupkey': ('lookupkey', '--batch'),
-            'contentlocation': ('contentlocation', '--batch')
+            'contentlocation': ('contentlocation', '--batch'),
+            'fromkey': ('fromkey',),
         }
+        silent_processes = ['fromkey']
 
         for proc, cmd in batch_processes.items():
             vars(self.processes)[proc] = BatchProcess(
-                'git', 'annex', *cmd, workdir=self.path
+                'git', 'annex', *cmd,
+                workdir=self.path,
+                silent=(proc in silent_processes)
             )
 
         self._meta_cache = [None, None]
@@ -82,7 +86,7 @@ class GitAnnex(collections.abc.Mapping):
         return self.processes.calckey(file_path)
 
     def fromkey(self, key, file_path):
-        return self._annex('fromkey', key, file_path)
+        return self.processes.fromkey(key, file_path)
 
     def lookupkey(self, file_path):
         return self.processes.lookupkey(file_path)
@@ -251,9 +255,10 @@ class RepeatedProcess:
 
 
 class BatchProcess:
-    def __init__(self, *batch_command, workdir=None):
+    def __init__(self, *batch_command, workdir=None, silent=False):
         self._command = batch_command
         self._workdir = workdir
+        self._silent = silent
         self._process = self.start()
 
     def start(self):
@@ -291,8 +296,9 @@ class BatchProcess:
 
         query = " ".join(query_line) or json.dumps(query_object)
         print(query, file=self._process.stdin, flush=True)
-        response = self._process.stdout.readline().strip()
-        return response if query_line else json.loads(response)
+        if not self._silent:
+            response = self._process.stdout.readline().strip()
+            return response if query_line else json.loads(response)
 
     def __repr__(self):
         repr_ = 'BatchProcess(cmd={!r}, cwd={!r}, process={!r})'
