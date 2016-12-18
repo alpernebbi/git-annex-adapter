@@ -138,6 +138,9 @@ class GitAnnex(collections.abc.Mapping):
             set.union(*map(set, fields + [{}]))
         )
 
+    def pre_commit(self, path=None):
+        return self._annex('pre-commit', path or self.path)
+
     def __getitem__(self, map_key):
         if map_key in self.files(cached=True):
             key, file = self.lookupkey(map_key), map_key
