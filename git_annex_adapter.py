@@ -78,9 +78,12 @@ class GitAnnex(collections.abc.Mapping):
     def import_(self, path, duplicate=True):
         if os.path.basename(path) in os.listdir(self.path):
             raise ValueError('Import path basename conflict')
-        command = ['import', path]
+        command = ['import', path, '--json']
         if duplicate: command.append('--duplicate')
-        return self._annex(*command)
+
+        response = self._annex(*command).splitlines()
+        jsons = (json.loads(line) for line in response)
+        return {json_['file']: json_['key'] for json_ in jsons}
 
     def calckey(self, file_path):
         return self.processes.calckey(file_path)
