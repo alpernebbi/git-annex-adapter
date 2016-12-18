@@ -138,6 +138,9 @@ class GitAnnex(collections.abc.Mapping):
             set.union(*map(set, fields + [{}]))
         )
 
+    def fix(self, path=None):
+        return self._annex('fix', path or self.path)
+
     def pre_commit(self, path=None):
         return self._annex('pre-commit', path or self.path)
 
