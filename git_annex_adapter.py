@@ -54,7 +54,11 @@ class GitAnnex(collections.abc.Mapping):
             workdir=self.path
         )
 
-        self._annex('metadata', '--key', 'SHA256E-s0--0')
+        try:
+            self._annex('metadata', '--key', 'SHA256E-s0--0')
+        except subprocess.CalledProcessError:
+            msg = 'Not in a git-annex repo: {}'.format(self.path)
+            raise ValueError(msg) from None
 
         self.processes = Namespace()
         batch_processes = {
