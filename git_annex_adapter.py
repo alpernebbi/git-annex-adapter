@@ -85,6 +85,7 @@ class GitAnnex(collections.abc.Mapping):
         command = ['import', path, '--json']
         if duplicate: command.append('--duplicate')
 
+        self.clear_metadata_cache()
         response = self._annex(*command).splitlines()
         jsons = (json.loads(line) for line in response)
         return {json_['file']: json_['key'] for json_ in jsons}
@@ -146,9 +147,11 @@ class GitAnnex(collections.abc.Mapping):
         )
 
     def fix(self, path=None):
+        self.clear_metadata_cache()
         return self._annex('fix', path or self.path)
 
     def pre_commit(self, path=None):
+        self.clear_metadata_cache()
         return self._annex('pre-commit', path or self.path)
 
     def __getitem__(self, map_key):
