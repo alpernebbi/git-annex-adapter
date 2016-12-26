@@ -176,7 +176,7 @@ class GitAnnex(collections.abc.Mapping):
         if map_key in self.files(cached=True):
             key, file = self.lookupkey(map_key), map_key
 
-        elif map_key in self.keys(cached=True):
+        elif self.examinekey(map_key):
             key, file = map_key, None
 
         else:
