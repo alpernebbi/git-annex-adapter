@@ -63,6 +63,7 @@ class GitAnnex(collections.abc.Mapping):
         self.processes = Namespace()
         batch_processes = {
             'metadata': ('metadata', '--batch', '--json'),
+            'examinekey': ('examinekey', '--batch', '--json'),
             'calckey': ('calckey', '--batch'),
             'lookupkey': ('lookupkey', '--batch'),
             'contentlocation': ('contentlocation', '--batch'),
@@ -98,6 +99,23 @@ class GitAnnex(collections.abc.Mapping):
 
     def lookupkey(self, file_path):
         return self.processes.lookupkey(file_path)
+
+    def examinekey(self, key):
+        try:
+            prefix, name = key.split('--')
+            backend, *fields = prefix.split('-')
+        except:
+            return None
+        else:
+            if backend in {
+                'SHA256E', 'SHA256', 'SHA512', 'SHA512E', 'SHA384',
+                'SHA384E', 'SHA224', 'SHA224E', 'SHA3_512', 'SHA3_512E',
+                'SHA3_384', 'SHA3_384E', 'SHA3_256', 'SHA3_256E',
+                'SHA3_224', 'SHA3_224E', 'SKEIN512', 'SKEIN512E',
+                'SKEIN256', 'SKEIN256E', 'SHA1', 'SHA1E',
+                'MD5', 'MD5E', 'WORM', 'URL'
+            }:
+                return self.processes.examinekey(key)
 
     def locate(self, key, absolute=False):
         rel_path = self.processes.contentlocation(key)
