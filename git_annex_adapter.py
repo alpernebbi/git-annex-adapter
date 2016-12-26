@@ -157,7 +157,8 @@ class GitAnnex(collections.abc.Mapping):
         return {meta['file'] for meta in file_meta}
 
     def fields(self, cached=False):
-        metadata = self.metadata(all_keys=True, cached=cached)
+        metadata = self.metadata(all_keys=True, cached=cached) \
+                   + self.metadata(all_keys=False, cached=cached)
         fields = [meta.get('fields', {}) for meta in metadata]
         return filter(
             lambda f: not f.endswith('lastchanged'),
