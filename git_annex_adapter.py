@@ -174,13 +174,12 @@ class GitAnnex(collections.abc.Mapping):
         return self._annex('pre-commit', path or self.path)
 
     def __getitem__(self, map_key):
-        if map_key in self.files(cached=True):
-            key, file = self.lookupkey(map_key), map_key
+        key, file = self.lookupkey(map_key), map_key
 
-        elif self.examinekey(map_key):
+        if not key and self.examinekey(map_key):
             key, file = map_key, None
 
-        else:
+        if not key:
             raise KeyError(map_key)
 
         return GitAnnexMetadata(self, key=key, file=file)
