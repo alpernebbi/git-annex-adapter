@@ -133,7 +133,7 @@ class GitAnnex(collections.abc.Mapping):
 
         try:
             jsons = self._annex(
-                'metadata', '--json', ('--all' if all_keys else '')
+                'metadata', '--json', ('--all' if all_keys else '.')
             ).splitlines()
             metadata = [json.loads(json_) for json_ in jsons]
             self._meta_cache[all_keys] = metadata
