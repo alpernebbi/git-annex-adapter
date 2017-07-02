@@ -42,6 +42,6 @@ setuptools.setup(
         'Programming Language :: Python :: 3.5',
     ],
     keywords='git-annex metadata',
-    py_modules=['git_annex_adapter'],
+    packages=['git_annex_adapter'],
     install_requires=['pygit2'],
 )
