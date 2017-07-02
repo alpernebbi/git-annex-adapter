@@ -26,7 +26,7 @@ with open(os.path.join(root, 'README.rst'), encoding='utf-8') as f:
 
 setuptools.setup(
     name='git-annex-adapter',
-    version='0.1.0',
+    version='0.2.0',
     description='Call git-annex commands from Python',
     long_description=readme,
     url='https://github.com/alpernebbi/git-annex-adapter',
