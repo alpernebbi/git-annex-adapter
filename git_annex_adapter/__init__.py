@@ -14,3 +14,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import subprocess
+
+
+def init_annex(
+        path,
+        description=None,
+        version=None,
+        ):
+    """
+    Initializes git-annex on the repository in the given *path*.
+
+    See git-annex-init documentation for more details.
+    """
+    cmd_line = ['git', 'annex', 'init']
+    if description:
+        cmd_line.append(description)
+    if version:
+        cmd_line.append('--version={}'.format(version))
+
+    cmd_result = subprocess.run(
+        cmd_line,
+        cwd=path,
+    )
+
