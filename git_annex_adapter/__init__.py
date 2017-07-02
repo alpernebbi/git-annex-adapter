@@ -16,6 +16,7 @@
 
 import subprocess
 
+from .repo import GitAnnexRepo
 
 def init_annex(
         path,
@@ -37,4 +38,7 @@ def init_annex(
         cmd_line,
         cwd=path,
     )
+
+    if not cmd_result.returncode:
+        return GitAnnexRepo(path)
 
