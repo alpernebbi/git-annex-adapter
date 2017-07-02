@@ -43,4 +43,5 @@ setuptools.setup(
     ],
     keywords='git-annex metadata',
     py_modules=['git_annex_adapter'],
+    install_requires=['pygit2'],
 )
