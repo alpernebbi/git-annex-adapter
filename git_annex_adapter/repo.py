@@ -14,3 +14,36 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import pygit2
+
+class GitAnnexRepo(pygit2.Repository):
+    """
+    Provides git and git-annex functionality.
+
+    This class extends pygit2.Repository by only adding an *annex*
+    property that can be used to access git-annex functionality.
+    Constructor arguments are the same as that of pygit2.Repository.
+
+    See pygit2.Repository and git_annex_adapter.GitAnnex for git or
+    git-annex specific documentation.
+
+    """
+    def __init__(self, path, *args, **kwargs):
+        super().__init__(path, *args, **kwargs)
+        self.annex = GitAnnex(self)
+
+    def __repr__(self):
+        return "git_annex_adapter.GitAnnexRepo({})".format(self.path)
+
+
+class GitAnnex:
+    """
+    Provides git-annex functionality.
+
+    """
+    def __init__(self, repo):
+        self.repo = repo
+
+    def __repr__(self):
+        return "git_annex_adapter.GitAnnex({})".format(self.repo.path)
+
