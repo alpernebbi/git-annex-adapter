@@ -16,6 +16,7 @@
 
 import unittest
 import tempfile
+import pygit2
 
 
 class TempDirTestCase(unittest.TestCase):
@@ -35,4 +36,18 @@ class TempDirTestCase(unittest.TestCase):
 
     def tearDown(self):
         self._tempdir.__exit__(None, None, None)
+
+
+class TempRepoTestCase(TempDirTestCase):
+    """
+    Extends unittest.TestCase to provide a temporary git repo.
+
+    The pygit2.Repository object representing the temporary git
+    repo is assigned to the *repo* property of the instance
+    during test setup.
+
+    """
+    def setUp(self):
+        super().setUp()
+        self.repo = pygit2.init_repository(self.tempdir)
 
