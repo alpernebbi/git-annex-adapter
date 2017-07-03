@@ -14,9 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import subprocess
 import unittest
 import tempfile
 import pygit2
+import git_annex_adapter
 
 
 class TempDirTestCase(unittest.TestCase):
@@ -50,4 +52,31 @@ class TempRepoTestCase(TempDirTestCase):
     def setUp(self):
         super().setUp()
         self.repo = pygit2.init_repository(self.tempdir)
+
+
+class TempAnnexTestCase(TempRepoTestCase):
+    """
+    Extends unittest.TestCase to provide a temporary git-annex repo.
+
+    The git_annex_adapter.repo.GitAnnexRepo object representing the
+    temporary git-annex repo is assigned to the *repo* property of
+    the instance during test setup.
+
+    """
+    def setUp(self):
+        super().setUp()
+        self.repo = git_annex_adapter.init_annex(self.repo.workdir)
+
+    def tearDown(self):
+        # Have to uninit before cleaning directory, since git-annex
+        # marks its objects read-only so that they don't get deleted.
+        subprocess.run(
+            ['git', 'annex', 'uninit'],
+            cwd=self.repo.workdir,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            check=True,
+        )
+        super().tearDown()
 
