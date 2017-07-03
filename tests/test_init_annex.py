@@ -18,6 +18,7 @@ import unittest
 import git_annex_adapter
 
 from tests.utils import TempDirTestCase
+from tests.utils import TempRepoTestCase
 
 
 class TestInitAnnexOnEmptyDir(TempDirTestCase):
@@ -30,6 +31,23 @@ class TestInitAnnexOnEmptyDir(TempDirTestCase):
         """
         with self.assertRaises(Exception):
             git_annex_adapter.init_annex(self.tempdir)
+
+
+class TestInitAnnexOnEmptyRepo(TempRepoTestCase):
+    """Test init_annex on an empty temporary git repository"""
+
+    def test_init_annex_success(self):
+        """
+        init_annex should work on a newly initialized git repo
+        and return a GitAnnexRepo object. The repository should have
+        a git-annex branch as a result.
+        """
+        annex_repo = git_annex_adapter.init_annex(self.repo.workdir)
+        self.assertIsInstance(
+            annex_repo,
+            git_annex_adapter.repo.GitAnnexRepo,
+        )
+        self.assertIn('git-annex', annex_repo.listall_branches())
 
 
 if __name__ == '__main__':
