@@ -20,6 +20,7 @@ import logging
 from .repo import GitAnnexRepo
 
 logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def init_annex(
