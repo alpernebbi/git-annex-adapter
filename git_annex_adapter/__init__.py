@@ -34,9 +34,9 @@ def init_annex(
     See git-annex-init documentation for more details.
     """
     cmd_line = ['git', 'annex', 'init']
-    if description:
+    if description is not None:
         cmd_line.append(description)
-    if version:
+    if version is not None:
         cmd_line.append('--version={}'.format(version))
 
     try:
