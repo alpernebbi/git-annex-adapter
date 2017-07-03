@@ -15,8 +15,12 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import subprocess
+import logging
 
 from .repo import GitAnnexRepo
+
+logger = logging.getLogger(__name__)
+
 
 def init_annex(
         path,
