@@ -38,11 +38,34 @@ def init_annex(
     if version:
         cmd_line.append('--version={}'.format(version))
 
-    cmd_result = subprocess.run(
-        cmd_line,
-        cwd=path,
-    )
+    try:
+        cmd_result = subprocess.run(
+            cmd_line,
+            cwd=path,
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            check=True,
+            universal_newlines=True,
+        )
+    
+    except OSError as err:
+        logger.exception('init_annex failed: {}'.format(err.strerror))
+        logger.debug('init_annex args: {}'.format({
+            'path':path,
+            'version':version,
+            'description':description
+        }))
+        raise
 
-    if not cmd_result.returncode:
+    except subprocess.CalledProcessError as err:
+        logger.exception('init_annex failed: {}'.format(err.stderr))
+        logger.debug('init_annex args: {}'.format({
+            'path': path,
+            'version': version,
+            'description': description
+        }))
+        raise
+
+    else:
         return GitAnnexRepo(path)
 
