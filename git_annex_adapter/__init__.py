@@ -35,6 +35,8 @@ def init_annex(
     Raises git_annex_adapter.exceptions.NotAGitRepoError if
     the given path is not already a git repository.
 
+    Raises ValueError if given repository version is invalid.
+
     See git-annex-init documentation for more details.
     """
     cmd_line = ['git', 'annex', 'init']
@@ -67,6 +69,11 @@ def init_annex(
         if "git-annex: Not in a git repository" in err.stderr:
             msg = "Path '{}' is not in a git repository."
             raise NotAGitRepoError(msg) from err
+
+        elif "option --version:" in err.stderr:
+            msg = "Repository version '{}' is invalid."
+            raise ValueError(msg) from err
+
         else:
             logger.debug("init_annex path: {}".format(path))
             logger.debug("init_annex cmd_line: {}".format(cmd_line))
