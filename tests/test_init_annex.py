@@ -18,6 +18,7 @@ import unittest
 
 from git_annex_adapter import init_annex
 from git_annex_adapter.repo import GitAnnexRepo
+from git_annex_adapter.exceptions import NotAGitRepoError
 
 from tests.utils import TempDirTestCase
 from tests.utils import TempRepoTestCase
@@ -29,7 +30,7 @@ class TestInitAnnexOnEmptyDir(TempDirTestCase):
 
     def test_init_annex_raises(self):
         """init_annex shouldn't work on empty directories."""
-        with self.assertRaises(Exception):
+        with self.assertRaises(NotAGitRepoError):
             init_annex(self.tempdir)
 
 
