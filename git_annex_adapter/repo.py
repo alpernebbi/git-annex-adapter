@@ -37,7 +37,11 @@ class GitAnnexRepo(pygit2.Repository):
         self.annex = GitAnnex(self)
 
     def __repr__(self):
-        return "git_annex_adapter.GitAnnexRepo({})".format(self.path)
+        return "{name}.{cls}({args})".format(
+            name=__name__,
+            cls=self.__class__.__name__,
+            args=self.path,
+        )
 
 
 class GitAnnex:
@@ -49,5 +53,9 @@ class GitAnnex:
         self.repo = repo
 
     def __repr__(self):
-        return "git_annex_adapter.GitAnnex({})".format(self.repo.path)
+        return "{name}.{cls}({args})".format(
+            name=__name__,
+            cls=self.__class__.__name__,
+            args=self.repo.path,
+        )
 
