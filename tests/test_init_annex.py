@@ -25,50 +25,47 @@ from tests.utils import TempAnnexTestCase
 
 
 class TestInitAnnexOnEmptyDir(TempDirTestCase):
-    """Test init_annex on an empty temporary directory"""
+    """Test init_annex on an empty temporary directory."""
 
     def test_init_annex_raises(self):
-        """
-        git-annex init fails if git isn't already initialized,
-        so init_annex should raise an exception.
-        """
+        """init_annex shouldn't work on empty directories."""
         with self.assertRaises(Exception):
             init_annex(self.tempdir)
 
 
 class TestInitAnnexWrongVersions(TempRepoTestCase):
-    """Test init_annex with wrong --version arguments"""
+    """Test init_annex with wrong --version arguments."""
 
     def test_init_annex_version_negative(self):
-        """Negative numbers aren't valid versions"""
+        """Negative numbers shouldn't be valid versions."""
         with self.assertRaises(ValueError):
             init_annex(self.tempdir, version=-1)
 
     def test_init_annex_version_string(self):
-        """Strings aren't valid versions"""
+        """Strings shouldn't be valid versions."""
         with self.assertRaises(ValueError):
             init_annex(self.tempdir, version='foo')
 
 
 class TestInitAnnexVersion(TempRepoTestCase):
-    """Test init_annex with correct version arguments"""
+    """Test init_annex with correct version arguments."""
 
     def test_init_annex_version_five(self):
-        """Repository version 5 should be valid"""
+        """Repository version 5 should be valid."""
         annex_repo = init_annex(self.tempdir, version=5)
         self.assertEqual(annex_repo.config['annex.version'], '5')
 
     def test_init_annex_version_six(self):
-        """Repository version 6 should be valid"""
+        """Repository version 6 should be valid."""
         annex_repo = init_annex(self.tempdir, version=6)
         self.assertEqual(annex_repo.config['annex.version'], '6')
 
 
 class TestInitAnnexDescribe(TempRepoTestCase):
-    """Test init_annex with correct description arguments"""
+    """Test init_annex with correct description arguments."""
 
     def test_init_annex_description(self):
-        """init_annex with description should update uuid.log"""
+        """init_annex with description should update uuid.log."""
         repo = init_annex(self.tempdir, description='foo')
         uuid = repo.config['annex.uuid']
         uuid_log_blob = repo.revparse_single('git-annex:uuid.log')
@@ -79,27 +76,20 @@ class TestInitAnnexDescribe(TempRepoTestCase):
 
 
 class TestInitAnnexOnEmptyRepo(TempRepoTestCase):
-    """Test init_annex on an empty temporary git repository"""
+    """Test init_annex on an empty temporary git repository."""
 
     def test_init_annex_success(self):
-        """
-        init_annex should work on a newly initialized git repo
-        and return a GitAnnexRepo object. The repository should have
-        a git-annex branch as a result.
-        """
+        """init_annex should work on a new git repo."""
         annex_repo = init_annex(self.repo.workdir)
         self.assertIsInstance(annex_repo, GitAnnexRepo)
         self.assertIn('git-annex', annex_repo.listall_branches())
 
 
 class TestInitAnnexOnEmptyAnnexRepo(TempAnnexTestCase):
-    """Test init_annex on an empty temporary git-annex repo"""
+    """Test init_annex on an empty temporary git-annex repo."""
 
     def test_init_annex_success(self):
-        """
-        Running init_annex on an already initialized git-annex
-        repository should succeed.
-        """
+        """init_annex should work on an initialized git-annex repo."""
         self.repo = init_annex(self.repo.workdir)
 
 
