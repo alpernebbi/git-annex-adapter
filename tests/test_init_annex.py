@@ -50,6 +50,34 @@ class TestInitAnnexWrongVersions(TempRepoTestCase):
             init_annex(self.tempdir, version='foo')
 
 
+class TestInitAnnexVersion(TempRepoTestCase):
+    """Test init_annex with correct version arguments"""
+
+    def test_init_annex_version_five(self):
+        """Repository version 5 should be valid"""
+        annex_repo = init_annex(self.tempdir, version=5)
+        self.assertEqual(annex_repo.config['annex.version'], '5')
+
+    def test_init_annex_version_six(self):
+        """Repository version 6 should be valid"""
+        annex_repo = init_annex(self.tempdir, version=6)
+        self.assertEqual(annex_repo.config['annex.version'], '6')
+
+
+class TestInitAnnexDescribe(TempRepoTestCase):
+    """Test init_annex with correct description arguments"""
+
+    def test_init_annex_description(self):
+        """init_annex with description should update uuid.log"""
+        repo = init_annex(self.tempdir, description='foo')
+        uuid = repo.config['annex.uuid']
+        uuid_log_blob = repo.revparse_single('git-annex:uuid.log')
+        self.assertIn(
+            "{} {} timestamp=".format(uuid, 'foo'),
+            str(uuid_log_blob.data),
+        )
+
+
 class TestInitAnnexOnEmptyRepo(TempRepoTestCase):
     """Test init_annex on an empty temporary git repository"""
 
