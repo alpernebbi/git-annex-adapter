@@ -33,6 +33,11 @@ class TestInitAnnexOnEmptyDir(TempDirTestCase):
         with self.assertRaises(NotAGitRepoError):
             init_annex(self.tempdir)
 
+    def test_init_annex_nonexistent(self):
+        """init_annex shouldn't work on nonexistent directories."""
+        with self.assertRaises(NotAGitRepoError):
+            init_annex(self.tempdir + '/nonexistent')
+
 
 class TestInitAnnexWrongVersions(TempRepoTestCase):
     """Test init_annex with wrong --version arguments."""
