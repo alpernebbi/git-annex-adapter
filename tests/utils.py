@@ -14,14 +14,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 import subprocess
+import sys
 import unittest
 import tempfile
 import pygit2
 import git_annex_adapter
 
 
-class TempDirTestCase(unittest.TestCase):
+class LoggedTestCase(unittest.TestCase):
+    """Extends unittest.TestCase to print log messages to stderr."""
+    def setUp(self):
+        super().setUp()
+        logging.basicConfig(
+            format='[{levelname}] [{name}] {message}',
+            style='{',
+            level=logging.NOTSET,
+            stream=sys.stderr,
+        )
+
+
+class TempDirTestCase(LoggedTestCase):
     """
     Extends unittest.TestCase to provide a temporary directory.
 
@@ -30,6 +44,7 @@ class TempDirTestCase(unittest.TestCase):
 
     """
     def setUp(self):
+        super().setUp()
         self._tempdir = tempfile.TemporaryDirectory(
             prefix='git-annex-adapter-tests-',
         )
@@ -38,6 +53,7 @@ class TempDirTestCase(unittest.TestCase):
 
     def tearDown(self):
         self._tempdir.__exit__(None, None, None)
+        super().tearDown()
 
 
 class TempRepoTestCase(TempDirTestCase):
