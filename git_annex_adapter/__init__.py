@@ -18,6 +18,7 @@ import subprocess
 import logging
 
 from .repo import GitAnnexRepo
+from .exceptions import NotAGitRepoError
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -30,6 +31,9 @@ def init_annex(
         ):
     """
     Initializes git-annex on the repository in the given *path*.
+
+    Raises git_annex_adapter.exceptions.NotAGitRepoError if
+    the given path is not already a git repository.
 
     See git-annex-init documentation for more details.
     """
@@ -49,14 +53,18 @@ def init_annex(
             universal_newlines=True,
         )
     
-    except OSError as err:
+    except FileNotFoundError as err:
         logger.exception('init_annex failed: {}'.format(err.strerror))
         logger.debug('init_annex args: {}'.format({
             'path':path,
             'version':version,
             'description':description
         }))
-        raise
+        if "No such file or directory:" in err.strerror:
+            msg = "Path '{}' does not exist."
+            raise NotAGitRepoError(msg) from err
+        else:
+            raise
 
     except subprocess.CalledProcessError as err:
         logger.exception('init_annex failed: {}'.format(err.stderr))
@@ -65,7 +73,11 @@ def init_annex(
             'version': version,
             'description': description
         }))
-        raise
+        if "git-annex: Not in a git repository" in err.stderr:
+            msg = "Path '{}' is not in a git repository."
+            raise NotAGitRepoError(msg) from err
+        else:
+            raise
 
     else:
         return GitAnnexRepo(path)

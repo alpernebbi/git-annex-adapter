@@ -14,3 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+
+class NotAGitRepoError(Exception):
+    """An expected git repository is not initialized"""
+
+class NotAGitAnnexRepoError(Exception):
+    """An expected git-annex repository is not initialized"""
+
