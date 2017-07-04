@@ -36,6 +36,20 @@ class TestInitAnnexOnEmptyDir(TempDirTestCase):
             init_annex(self.tempdir)
 
 
+class TestInitAnnexWrongVersions(TempRepoTestCase):
+    """Test init_annex with wrong --version arguments"""
+
+    def test_init_annex_version_negative(self):
+        """Negative numbers aren't valid versions"""
+        with self.assertRaises(ValueError):
+            init_annex(self.tempdir, version=-1)
+
+    def test_init_annex_version_string(self):
+        """Strings aren't valid versions"""
+        with self.assertRaises(ValueError):
+            init_annex(self.tempdir, version='foo')
+
+
 class TestInitAnnexOnEmptyRepo(TempRepoTestCase):
     """Test init_annex on an empty temporary git repository"""
 
