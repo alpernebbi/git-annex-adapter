@@ -15,7 +15,9 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import unittest
-import git_annex_adapter
+
+from git_annex_adapter import init_annex
+from git_annex_adapter.repo import GitAnnexRepo
 
 from tests.utils import TempDirTestCase
 from tests.utils import TempRepoTestCase
@@ -31,7 +33,7 @@ class TestInitAnnexOnEmptyDir(TempDirTestCase):
         so init_annex should raise an exception.
         """
         with self.assertRaises(Exception):
-            git_annex_adapter.init_annex(self.tempdir)
+            init_annex(self.tempdir)
 
 
 class TestInitAnnexOnEmptyRepo(TempRepoTestCase):
@@ -43,11 +45,8 @@ class TestInitAnnexOnEmptyRepo(TempRepoTestCase):
         and return a GitAnnexRepo object. The repository should have
         a git-annex branch as a result.
         """
-        annex_repo = git_annex_adapter.init_annex(self.repo.workdir)
-        self.assertIsInstance(
-            annex_repo,
-            git_annex_adapter.repo.GitAnnexRepo,
-        )
+        annex_repo = init_annex(self.repo.workdir)
+        self.assertIsInstance(annex_repo, GitAnnexRepo)
         self.assertIn('git-annex', annex_repo.listall_branches())
 
 
@@ -59,7 +58,7 @@ class TestInitAnnexOnEmptyAnnexRepo(TempAnnexTestCase):
         Running init_annex on an already initialized git-annex
         repository should succeed.
         """
-        self.repo = git_annex_adapter.init_annex(self.repo.workdir)
+        self.repo = init_annex(self.repo.workdir)
 
 
 if __name__ == '__main__':
