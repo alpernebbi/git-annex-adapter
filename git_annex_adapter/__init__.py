@@ -54,29 +54,23 @@ def init_annex(
         )
     
     except FileNotFoundError as err:
-        logger.exception('init_annex failed: {}'.format(err.strerror))
-        logger.debug('init_annex args: {}'.format({
-            'path':path,
-            'version':version,
-            'description':description
-        }))
         if "No such file or directory:" in err.strerror:
             msg = "Path '{}' does not exist."
             raise NotAGitRepoError(msg) from err
         else:
+            logger.debug("init_annex path: {}".format(path))
+            logger.debug("init_annex cmd_line: {}".format(cmd_line))
+            logger.debug("init_annex error: {}".format(err.strerror))
             raise
 
     except subprocess.CalledProcessError as err:
-        logger.exception('init_annex failed: {}'.format(err.stderr))
-        logger.debug('init_annex args: {}'.format({
-            'path': path,
-            'version': version,
-            'description': description
-        }))
         if "git-annex: Not in a git repository" in err.stderr:
             msg = "Path '{}' is not in a git repository."
             raise NotAGitRepoError(msg) from err
         else:
+            logger.debug("init_annex path: {}".format(path))
+            logger.debug("init_annex cmd_line: {}".format(cmd_line))
+            logger.debug("init_annex stderr: \n{}".format(err.stderr))
             raise
 
     else:
