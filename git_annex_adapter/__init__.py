@@ -18,8 +18,7 @@ import subprocess
 import logging
 
 from .repo import GitAnnexRepo
-from .exceptions import NotAGitRepoError
-from .process import ProcessRunner
+from .process import GitAnnexInitRunner
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -40,42 +39,7 @@ def init_annex(
 
     See git-annex-init documentation for more details.
     """
-    runner = ProcessRunner('git-annex', 'init', workdir=path)
-
-    args = []
-    if description is not None:
-        args.append(description)
-    if version is not None:
-        args.append('--version={}'.format(version))
-
-    try:
-        cmd_result = runner(*args)
-
-    except FileNotFoundError as err:
-        if "No such file or directory:" in err.strerror:
-            msg = "Path '{}' does not exist."
-            raise NotAGitRepoError(msg) from err
-        else:
-            logger.debug("init_annex path: {}".format(path))
-            logger.debug("init_annex args: {}".format(args))
-            logger.debug("init_annex error: {}".format(err.strerror))
-            raise
-
-    except subprocess.CalledProcessError as err:
-        if "git-annex: Not in a git repository" in err.stderr:
-            msg = "Path '{}' is not in a git repository."
-            raise NotAGitRepoError(msg) from err
-
-        elif "option --version:" in err.stderr:
-            msg = "Repository version '{}' is invalid."
-            raise ValueError(msg) from err
-
-        else:
-            logger.debug("init_annex path: {}".format(path))
-            logger.debug("init_annex args: {}".format(args))
-            logger.debug("init_annex stderr: \n{}".format(err.stderr))
-            raise
-
-    else:
-        return GitAnnexRepo(path)
+    runner = GitAnnexInitRunner(path)
+    runner(description=description, version=version)
+    return GitAnnexRepo(path)
 
