@@ -139,6 +139,10 @@ class Process(subprocess.Popen):
 
         return (stdout, stderr)
 
+    def __exit__(self, exc_type, exc_value, traceback):
+        # The process would deadlock if it is waiting for input
+        self.stdin.close()
+        super().__exit__(exc_type, exc_value, traceback)
 
     def __repr__(self):
         return "{name}.{cls}({args})".format(
