@@ -83,13 +83,15 @@ class Process(subprocess.Popen):
 
     @staticmethod
     def _unqueue(q, timeout=0.1):
-        """Yield items from a queue within a timeout."""
+        """Yield items from a queue until none exist for a timeout."""
         try:
-            # This is assuming the process will not wait while
-            # printing the lines, so the queue will have all
-            # relevant output when we get the first line
-            yield q.get(block=True, timeout=timeout)
-            yield from iter(q.get_nowait, queue.Empty)
+            # This will always wait at least timeout seconds, and
+            # may wait forever if the process keeps writing fast
+            # enough.
+            yield from iter(
+                lambda: q.get(block=True, timeout=timeout),
+                queue.Empty,
+            )
         except queue.Empty:
             pass
 
@@ -97,9 +99,9 @@ class Process(subprocess.Popen):
         """
         Send a line to stdin, read and return lines from stdout.
 
-        This waits at most timeout seconds for the first line to
-        arrive from the output, then returns all immediately available
-        output lines as a list.
+        This will keep reading the process output until it hasn't
+        printed anything for timeout seconds, and will return a list
+        of all printed lines.
         """
         if input is not None:
             print(input, file=self.stdin, flush=True)
