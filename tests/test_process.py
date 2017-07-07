@@ -100,6 +100,24 @@ class TestProcessesInAnnexRepo(TempAnnexTestCase):
                 'repositories containing these files: 0',
             ])
 
+    def test_process_matches_popen_communicate(self):
+        """Process.communicate should work as Popen.communicate does"""
+        with Process(['git', 'config', '-l'], self.tempdir) as proc:
+            result_proc = proc.communicate()
+
+        with subprocess.Popen(
+            ['git', 'config', '-l'],
+            cwd=self.tempdir,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            bufsize=1,
+        ) as popen:
+            result_popen = popen.communicate()
+
+        self.assertEqual(result_proc, result_popen)
+
 if __name__ == '__main__':
     unittest.main()
 
