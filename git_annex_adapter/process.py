@@ -252,3 +252,26 @@ class GitAnnexInitRunner(GitAnnexRunner):
             self.logger.debug("Unknown error:\n", exc_info=True)
             raise
 
+
+class GitAnnexVersionRunner(GitAnnexRunner):
+    """Helper class to run git-annex version commands."""
+    def __init__(self, workdir):
+        super().__init__(['version'], workdir)
+
+    def __call__(self, raw=False):
+        args = []
+        if raw:
+            args.append('--raw')
+
+        try:
+            return super().__call__(*args)
+
+        except subprocess.CalledProcessError as err:
+            self.logger.debug("Unknown error:\n", exc_info=True)
+            self.logger.debug("stderr:\n{}".format(err.stderr))
+            raise
+
+        except:
+            self.logger.debug("Unknown error:\n", exc_info=True)
+            raise
+
