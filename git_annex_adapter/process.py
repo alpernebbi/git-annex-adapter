@@ -107,12 +107,21 @@ class Process(subprocess.Popen):
 
         None is interpreted as an EOF, and closes the stream.
         """
+        t = self._threads['stdin']
+        if not t.isAlive():
+            fmt = "Reader thread {} for stdin of command {} is dead."
+            msg = fmt.format(t, self.args)
+            raise BrokenPipeError(msg)
         self._queues['stdin'].put(line)
 
     def writelines(self, lines):
-        """Send multiple lines to be printed to stdin."""
+        """
+        Send multiple lines to be printed to stdin.
+
+        This only calls self.writeline with each item of an iterable.
+        """
         for line in lines:
-            self._queues['stdin'].put(line)
+            self.writeline(line)
 
     def readline(self, timeout=0, source='stdout'):
         """
