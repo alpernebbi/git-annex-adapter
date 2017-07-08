@@ -17,6 +17,8 @@
 import logging
 import pygit2
 
+from .exceptions import NotAGitRepoError
+
 logger = logging.getLogger(__name__)
 
 
@@ -33,7 +35,17 @@ class GitAnnexRepo(pygit2.Repository):
 
     """
     def __init__(self, path, *args, **kwargs):
-        super().__init__(path, *args, **kwargs)
+        try:
+            super().__init__(path, *args, **kwargs)
+
+        except KeyError as err:
+            if err.args == (path,):
+                fmt = "Path {} is not a valid git repository"
+                msg = fmt.format(path)
+                raise NotAGitRepoError(msg) from err
+            else:
+                raise
+
         self.annex = GitAnnex(self)
 
     def __repr__(self):
