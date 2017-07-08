@@ -14,11 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import subprocess
 import logging
 
-from .repo import GitAnnexRepo
-from .process import GitAnnexInitRunner
+import git_annex_adapter.repo as repo
+import git_annex_adapter.process as process
+import git_annex_adapter.exceptions as exceptions
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -39,7 +39,7 @@ def init_annex(
 
     See git-annex-init documentation for more details.
     """
-    runner = GitAnnexInitRunner(path)
+    runner = process.GitAnnexInitRunner(path)
     runner(description=description, version=version)
-    return GitAnnexRepo(path)
+    return repo.GitAnnexRepo(path)
 
