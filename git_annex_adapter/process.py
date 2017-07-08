@@ -51,6 +51,7 @@ class Process(subprocess.Popen):
             "cwd": workdir,
         })
         super().__init__(args, **kwargs)
+        self.workdir = workdir
 
 
         # https://stackoverflow.com/a/4896288
