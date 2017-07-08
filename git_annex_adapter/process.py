@@ -89,16 +89,24 @@ class Process(subprocess.Popen):
             for line in iter(src.readline, ''):
                 q.put(line.strip())
 
+        # Luckily, rest of the queue isn't erased with this.
+        q.maxsize = 1
+        while True:
+            q.put(None)
+
     @staticmethod
     def _write_lines_from_queue(q, dest):
         """Write lines from a queue to a file."""
         with dest:
-            # This won't actually terminate until program exits
-            for line in iter(q.get, queue.Empty):
+            for line in iter(q.get, None):
                 print(line, file=dest, flush=True)
 
     def writeline(self, line):
-        """Send a line to be printed to stdin."""
+        """
+        Send a line to be printed to stdin.
+
+        None is interpreted as an EOF, and closes the stream.
+        """
         self._queues['stdin'].put(line)
 
     def writelines(self, lines):
@@ -112,7 +120,8 @@ class Process(subprocess.Popen):
 
         This method will wait at most timeout seconds to retrieve
         one line from the source. If timeout is None, it will wait
-        until a line has been read, which may cause a deadlock.
+        until a line has been read, which may cause a deadlock. If
+        there are certainly no more lines to read, returns None.
 
         If the timeout is exceeded, raises a TimeoutError.
         """
@@ -184,7 +193,11 @@ class Process(subprocess.Popen):
 
     def __exit__(self, exc_type, exc_value, traceback):
         # The process would deadlock if it is waiting for input
-        self.stdin.close()
+        try:
+            self.writeline(None)
+        except BrokenPipeError:
+            pass
+
         super().__exit__(exc_type, exc_value, traceback)
 
     def __repr__(self):
