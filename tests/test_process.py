@@ -48,9 +48,9 @@ class TestProcessesInEmptyDirectory(TempDirTestCase):
 class TestProcessesInAnnexRepo(TempAnnexTestCase):
     """Test processes running in an empty git-annex repository"""
     def test_process_git_status(self):
-        """One-shot process output should be correct"""
+        """Process should be able to read whole output"""
         with Process(['git', 'status'], self.tempdir) as proc:
-            stdout = proc.communicate_lines()
+            stdout = proc.readlines(timeout=1, count=None)
             self.assertEqual(stdout, [
                 'On branch master',
                 '',
@@ -61,35 +61,38 @@ class TestProcessesInAnnexRepo(TempAnnexTestCase):
             ])
 
     def test_process_annex_metadata_batch(self):
-        """Process should be able to read one line per line"""
+        """Process should be able to read one line"""
         with Process(
             ['git', 'annex', 'metadata', '--batch', '--json'],
             self.tempdir,
         ) as proc:
-            lines = proc.communicate_lines(
+            proc.writeline(
                 '{"key":"SHA256E-s0--0"}'
             )
-            self.assertEqual(lines, ['{'
+            line = proc.readline(timeout=1)
+            self.assertEqual(line, ('{'
                 '"command":"metadata",'
                 '"note":"",'
                 '"success":true,'
                 '"key":"SHA256E-s0--0",'
                 '"file":null,'
                 '"fields":{}'
-            '}'])
+            '}'))
 
     def test_process_annex_info_batch(self):
-        """Process should be able to read multiple lines per line"""
+        """Process should be able to read multiple lines"""
         with Process(
             ['git', 'annex', 'info', '--batch'],
             self.tempdir,
         ) as proc:
-            lines_here = proc.communicate_lines('here')
+            proc.writeline('here')
+            lines_here = proc.readlines(timeout=1, count=2)
             self.assertEqual(lines_here, [
                 'remote annex keys: 0',
                 'remote annex size: 0 bytes',
             ])
-            lines_dot = proc.communicate_lines('.')
+            proc.writeline('.')
+            lines_dot = proc.readlines(timeout=1, count=7)
             self.assertEqual(lines_dot, [
                 'directory: .',
                 'local annex keys: 0',
