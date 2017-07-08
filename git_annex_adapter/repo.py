@@ -18,6 +18,7 @@ import logging
 import pygit2
 
 from .exceptions import NotAGitRepoError
+from .exceptions import NotAGitAnnexRepoError
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +63,12 @@ class GitAnnex:
 
     """
     def __init__(self, repo):
+        # Must have run git-annex init
+        if repo.lookup_branch('git-annex') is None:
+            fmt = 'Repository {} is not a git-annex repo.'
+            msg = fmt.format(repo)
+            raise NotAGitAnnexRepoError(msg)
+
         self.repo = repo
 
     def __repr__(self):
