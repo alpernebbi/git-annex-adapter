@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import collections.abc
 import logging
 import pygit2
 
@@ -57,7 +58,7 @@ class GitAnnexRepo(pygit2.Repository):
         )
 
 
-class GitAnnex:
+class GitAnnex(collections.abc.Mapping):
     """
     Provides git-annex functionality.
 
@@ -71,10 +72,39 @@ class GitAnnex:
 
         self.repo = repo
 
+    def __getitem__(self, key):
+        return AnnexedFile(key)
+
+    def __iter__(self):
+        root = self.repo.revparse_single('git-annex^{tree}')
+        # git-annex:aaa/bbb/*.log
+        yield from (
+            logf.name[:-4]
+            for aaa in root
+            if aaa.type == 'tree'
+            for bbb in self.repo[aaa.id]
+            if bbb.type == 'tree'
+            for logf in self.repo[bbb.id]
+            if logf.type == 'blob' \
+            and logf.name.endswith('.log')
+        )
+
+    def __len__(self):
+        return sum(1 for _ in iter(self))
+
     def __repr__(self):
         return "{name}.{cls}({args})".format(
             name=__name__,
             cls=self.__class__.__name__,
             args=self.repo.path,
         )
+
+
+class AnnexedFile:
+    """
+    Represents a file stored by git-annex.
+
+    """
+    def __init__(self, key):
+        self.key = key
 
