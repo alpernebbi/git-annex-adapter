@@ -19,6 +19,8 @@ import subprocess
 import sys
 import unittest
 import tempfile
+import pathlib
+
 import pygit2
 import git_annex_adapter
 
@@ -113,4 +115,15 @@ class TempAnnexTestCase(TempRepoTestCase):
             check=True,
         )
         super().tearDown()
+
+    def create_annexed_file(self, relpath, text):
+        path = pathlib.Path(self.tempdir) / relpath
+        path.parents[0].mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+
+        subprocess.run(
+            ['git', 'annex', 'add', '--quiet', relpath],
+            cwd=self.repo.workdir,
+            check=True,
+        )
 
