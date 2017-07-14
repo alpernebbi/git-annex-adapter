@@ -108,3 +108,10 @@ class AnnexedFile:
     def __init__(self, key):
         self.key = key
 
+    def __repr__(self):
+        return "{name}.{cls}({args})".format(
+            name=__name__,
+            cls=self.__class__.__name__,
+            args=self.key,
+        )
+
