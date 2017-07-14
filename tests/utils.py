@@ -69,6 +69,24 @@ class TempRepoTestCase(TempDirTestCase):
         super().setUp()
         self.repo = pygit2.init_repository(self.tempdir)
 
+    def git_commit(self):
+        """Commit the current index to the git repository."""
+        author = pygit2.Signature(
+            'Git-Annex-Adapter Tester',
+            'git-annex-adapter-tester@example.com',
+            1500000000, # Date: 2017-07-14 02:40:00
+        )
+
+        try:
+            parents = [self.repo.head.get_object().hex]
+        except pygit2.GitError:
+            parents = []
+
+        return self.repo.create_commit(
+            'HEAD', author, author, 'Test commit',
+            self.repo.index.write_tree(), parents,
+        )
+
 
 class TempAnnexTestCase(TempRepoTestCase):
     """
