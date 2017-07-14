@@ -200,6 +200,15 @@ class Process(subprocess.Popen):
 
         return (stdout, stderr)
 
+    def __call__(self, line):
+        """
+        Write a line to stdin, read and return a line from stdout.
+
+        This method blocks until an output line is available.
+        """
+        self.writeline(line)
+        return self.readline(timeout=None)
+
     def __exit__(self, exc_type, exc_value, traceback):
         # The process would deadlock if it is waiting for input
         try:

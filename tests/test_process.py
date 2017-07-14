@@ -78,6 +78,9 @@ class TestProcessesInAnnexRepo(TempAnnexTestCase):
                 '"file":null,'
                 '"fields":{}'
             '}'))
+            line_call = proc('{"key":"SHA256E-s0--0"}')
+            self.assertEqual(line_call, line)
+
 
     def test_process_annex_info_batch(self):
         """Process should be able to read multiple lines"""
