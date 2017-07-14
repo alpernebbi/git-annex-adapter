@@ -127,3 +127,35 @@ class TempAnnexTestCase(TempRepoTestCase):
             check=True,
         )
 
+
+class ThreeAnnexedFilesTestCase(TempAnnexTestCase):
+    """
+    Extends unittest.TestCase to provide three annexed files in a
+    git-annex repository.
+
+    The files are "foo", "bar" and "baz"; and each file has its name
+    as its content (without an terminating newline).
+
+    """
+    def setUp(self):
+        super().setUp()
+
+        self.files = ['foo', 'bar', 'baz']
+        for f in self.files:
+            self.create_annexed_file(f, f)
+
+        # Actual keys for files
+        self.keys = {
+            'foo': 'SHA256E-s3--'
+                '2c26b46b68ffc68ff99b453c1d304134'
+                '13422d706483bfa0f98a5e886266e7ae',
+            'bar': 'SHA256E-s3--'
+                'fcde2b2edba56bf408601fb721fe9b5c'
+                '338d10ee429ea04fae5511b68fbf8fb9',
+            'baz': 'SHA256E-s3--'
+                'baa5a0964d3320fbc0c6a922140453c8'
+                '513ea24ab8fd0577034804a967248096',
+        }
+
+        self.git_commit()
+
