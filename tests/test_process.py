@@ -26,8 +26,9 @@ from tests.utils import TempRepoTestCase
 from tests.utils import TempAnnexTestCase
 
 
-class TestProcessesInEmptyDirectory(TempDirTestCase):
+class TestProcessOnEmptyDir(TempDirTestCase):
     """Test processes running in an empty directory"""
+
     def test_runner_git_status(self):
         """ProcessRunner should raise on called process errors"""
         runner = ProcessRunner(['git'], workdir=self.tempdir)
@@ -46,8 +47,9 @@ class TestProcessesInEmptyDirectory(TempDirTestCase):
         self.assertIn('git version', proc.stdout)
 
 
-class TestProcessesInAnnexRepo(TempAnnexTestCase):
+class TestProcessOnEmptyAnnex(TempAnnexTestCase):
     """Test processes running in an empty git-annex repository"""
+
     def test_process_git_status(self):
         """Process should be able to read whole output"""
         with Process(['git', 'status'], self.tempdir) as proc:
