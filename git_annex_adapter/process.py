@@ -15,6 +15,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import itertools
+import json
 import logging
 import subprocess
 import threading
@@ -227,6 +228,38 @@ class Process(subprocess.Popen):
                 "workdir": self.workdir,
             }
         )
+
+
+class JsonProcess(Process):
+    """
+    Extends Process so that it can translate dictionary objects to and
+    from json formatted lines to be written to or read from a process.
+
+    """
+    def readjson(self, timeout=0, source='stdout'):
+        """
+        Read a json formatted line from source and return it as a
+        dictionary object.
+        """
+        line = self.readline(timeout=timeout, source=source)
+        return json.loads(line)
+
+    def writejson(self, obj):
+        """
+        Encode a dictionary object as a json formatted line and
+        write it to the stdin.
+        """
+        line = json.dumps(obj)
+        return self.writeline(line)
+
+    def __call__(self, obj):
+        """
+        Write a dictionary object to the stdin as a json formatted
+        line, decode and return lines from stdout as dictionary
+        objects.
+        """
+        self.writejson(obj)
+        return self.readjson(timeout=None)
 
 
 class ProcessRunner:

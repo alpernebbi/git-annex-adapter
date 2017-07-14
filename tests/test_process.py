@@ -18,6 +18,7 @@ import subprocess
 import unittest
 
 from git_annex_adapter.process import Process
+from git_annex_adapter.process import JsonProcess
 from git_annex_adapter.process import ProcessRunner
 
 from tests.utils import TempDirTestCase
@@ -81,6 +82,21 @@ class TestProcessesInAnnexRepo(TempAnnexTestCase):
             line_call = proc('{"key":"SHA256E-s0--0"}')
             self.assertEqual(line_call, line)
 
+    def test_jsonprocess_annex_metadata_batch(self):
+        """JsonProcess should encode and decode properly"""
+        with JsonProcess(
+            ['git', 'annex', 'metadata', '--batch', '--json'],
+            self.tempdir,
+        ) as proc:
+            obj = proc({'key':'SHA256E-s0--0'})
+            self.assertEqual(obj, {
+                'command': 'metadata',
+                'note': '',
+                'success': True,
+                'key': 'SHA256E-s0--0',
+                'file': None,
+                'fields': {},
+            })
 
     def test_process_annex_info_batch(self):
         """Process should be able to read multiple lines"""
