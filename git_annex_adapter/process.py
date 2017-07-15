@@ -216,6 +216,30 @@ class Process(subprocess.Popen):
 
         return (stdout, stderr)
 
+    def check(self):
+        """
+        Check if the process has exited, and if an error occured.
+
+        Returns None if process hasn't exited, or a CompletedProcess
+        object if it has exited without an error. If the process
+        has exited with an error, raises a CalledProcessError.
+
+        If process has exited, all available stdout and stderr
+        are captured into the returned object or raised exception.
+        """
+        retcode = self.poll()
+
+        if retcode is not None:
+            stdout, stderr = self.communicate(timeout=0)
+            completed = subprocess.CompletedProcess(
+                args=self.args,
+                returncode=retcode,
+                stdout=stdout,
+                stderr=stderr,
+            )
+            completed.check_returncode()
+            return completed
+
     def __call__(self, line):
         """
         Write a line to stdin, read and return a line from stdout.
