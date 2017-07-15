@@ -281,6 +281,66 @@ class JsonProcess(Process):
         return self.readjson(timeout=None)
 
 
+class GitAnnexBatchProcess:
+    """
+    Helper class to run git-annex processes in batch mode.
+
+    Starts a Process instance when necessary, and passes method
+    calls to it. If the Process instance dies, restarts it.
+
+    """
+    _procclass = Process
+
+    def __init__(self, args, workdir):
+        self.args = ('git', 'annex', *args)
+        self.workdir = workdir
+        self._process = None
+        self._dead_process = None
+
+    @property
+    def process(self):
+        if self._process and self._process.poll() is None:
+            return self._process
+
+        new_process = self._procclass(self.args, self.workdir)
+
+        if self._process:
+            # Log stdout and stderr of dead processes
+            (stdout, stderr) = self._process.communicate(timeout=0)
+            logger.debug('%s had died unexpectedly. ', self._process)
+            logger.debug('stdout:\n%s', stdout)
+            logger.debug('stderr:\n%s', stderr)
+            self._dead_process = (self._process, stdout, stderr)
+
+            # Copy remaining stdin lines
+            stdin = self._process.readlines(source='stdin')
+            new_process.writelines(stdin)
+
+        self._process = new_process
+        return self._process
+
+    def __repr__(self):
+        return "{name}.{cls}({args})".format(
+            name=__name__,
+            cls=self.__class__.__name__,
+            args={
+                "args": self.args,
+                "workdir": self.workdir,
+            }
+        )
+
+
+class GitAnnexBatchJsonProcess(GitAnnexBatchProcess):
+    """
+    Helper class to run git-annex processes in batch json mode.
+
+    Starts a JsonProcess instance when necessary, and passes method
+    calls to it. If the Process instance dies, restarts it.
+
+    """
+    _procclass = JsonProcess
+
+
 class ProcessRunner:
     """
     Helper class to repeatedly run a program with different arguments
