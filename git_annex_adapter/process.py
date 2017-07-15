@@ -26,6 +26,22 @@ from .exceptions import NotAGitRepoError
 logger = logging.getLogger(__name__)
 
 
+class ResizableQueue(queue.Queue):
+    """
+    Extends queue.Queue to enable changing its maxsize.
+
+    """
+    def resize(self, maxsize):
+        """
+        Change the maximum size of the queue.
+
+        Doesn't remove any items, so might cause qsize() > maxsize.
+        Shouldn't cause a problem since put() checks this condition,
+        """
+        with self.mutex:
+            self.maxsize = maxsize
+
+
 class Process(subprocess.Popen):
     """
     Extends subprocess.Popen to implement non-blocking read and writes.
@@ -57,9 +73,9 @@ class Process(subprocess.Popen):
 
         # https://stackoverflow.com/a/4896288
         self._queues = {
-            'stdin': queue.Queue(),
-            'stdout': queue.Queue(),
-            'stderr': queue.Queue(),
+            'stdin': ResizableQueue(),
+            'stdout': ResizableQueue(),
+            'stderr': ResizableQueue(),
         }
 
         self._threads = {
@@ -90,8 +106,7 @@ class Process(subprocess.Popen):
             for line in iter(src.readline, ''):
                 q.put(line.strip())
 
-        # Luckily, rest of the queue isn't erased with this.
-        q.maxsize = 1
+        q.resize(1)
         while True:
             q.put(None)
 
