@@ -257,7 +257,11 @@ class JsonProcess(Process):
         dictionary object.
         """
         line = self.readline(timeout=timeout, source=source)
-        return json.loads(line)
+
+        try:
+            return json.loads(line)
+        except TypeError:
+            return line
 
     def writejson(self, obj):
         """
