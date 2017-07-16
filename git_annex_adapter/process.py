@@ -102,9 +102,13 @@ class Process(subprocess.Popen):
     @staticmethod
     def _read_lines_to_queue(src, q):
         """Read lines from a source and put them into a queue."""
-        with src:
-            for line in iter(src.readline, ''):
-                q.put(line.strip())
+        try:
+            with src:
+                for line in iter(src.readline, ''):
+                    q.put(line.strip())
+
+        except BrokenPipeError:
+            pass
 
         q.resize(1)
         while True:
@@ -113,9 +117,13 @@ class Process(subprocess.Popen):
     @staticmethod
     def _write_lines_from_queue(q, dest):
         """Write lines from a queue to a file."""
-        with dest:
-            for line in iter(q.get, None):
-                print(line, file=dest, flush=True)
+        try:
+            with dest:
+                for line in iter(q.get, None):
+                    print(line, file=dest, flush=True)
+
+        except BrokenPipeError:
+            pass
 
     def writeline(self, line):
         """
