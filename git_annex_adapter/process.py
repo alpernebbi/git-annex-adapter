@@ -47,7 +47,7 @@ class LineReaderQueue(queue.Queue):
         try:
             with self.src:
                 for line in iter(self.src.readline, ''):
-                    self.put(line.strip())
+                    self.put(line.rstrip('\n'))
         finally:
             self.put(None)
 
@@ -266,7 +266,8 @@ class Process(subprocess.Popen):
         compatibility.
         """
         if input is not None:
-            self.writelines(l.strip() for l in input.splitlines())
+            lines = (l.rstrip('\n') for l in input.splitlines())
+            self.writelines(lines)
 
         outs = self.readlines(
             timeout=timeout,

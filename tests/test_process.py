@@ -120,7 +120,7 @@ class TestProcessOnEmptyAnnex(TempAnnexTestCase):
                 'local annex size: 0 bytes',
                 'annexed files in working tree: 0',
                 'size of annexed files in working tree: 0 bytes',
-                'numcopies stats:',
+                'numcopies stats: ',
                 'repositories containing these files: 0',
             ])
 
