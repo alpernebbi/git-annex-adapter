@@ -360,7 +360,11 @@ class JsonProcess(Process):
         Encode a dictionary object as a json formatted line and
         write it to the stdin.
         """
-        line = json.dumps(obj)
+        if obj is not None:
+            line = json.dumps(obj)
+        else:
+            line = None
+
         return self.writeline(line)
 
     def __call__(self, obj):
