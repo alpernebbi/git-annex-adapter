@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import collections
 import itertools
 import json
 import logging
@@ -26,20 +27,109 @@ from .exceptions import NotAGitRepoError
 logger = logging.getLogger(__name__)
 
 
-class ResizableQueue(queue.Queue):
+class LineReaderQueue(queue.Queue):
     """
-    Extends queue.Queue to enable changing its maxsize.
+    Extends Queue to continuously read lines from a source to itself.
 
     """
-    def resize(self, maxsize):
+    def __init__(self, src):
+        super().__init__()
+        self.src = src
+        self._thread = threading.Thread(
+            target=self._reader,
+            args=(),
+            daemon=True,
+        )
+        self._thread.start()
+
+    def _reader(self):
+        """Read lines from this queue's source into the queue."""
+        try:
+            with self.src:
+                for line in iter(self.src.readline, ''):
+                    self.put(line.strip())
+        finally:
+            self.put(None)
+
+    def get(self, block=True, timeout=None):
         """
-        Change the maximum size of the queue.
+        Remove and return a line from the queue.
 
-        Doesn't remove any items, so might cause qsize() > maxsize.
-        Shouldn't cause a problem since put() checks this condition,
+        If the reader thread is dead and there's no more lines to
+        return, raises BrokenPipeError.
         """
         with self.mutex:
-            self.maxsize = maxsize
+            if not self._thread.is_alive() and self._qsize() == 0:
+                fmt = 'Reader thread for {} is dead.'
+                msg = fmt.format(self.src)
+                raise BrokenPipeError(msg)
+
+        item = super().get(block=block, timeout=timeout)
+
+        # A None means the thread is about to die, so wait until
+        # it dies to prevent a race condition.
+        if item is None:
+            self._thread.join()
+
+        return item
+
+    def __repr__(self):
+        return "{name}.{cls}({args})".format(
+            name=__name__,
+            cls=self.__class__.__name__,
+            args=self.src
+        )
+
+
+class LineWriterQueue(queue.Queue):
+    """
+    Extends Queue to automatically write lines from itself to a
+    destination.
+
+    """
+    def __init__(self, dest):
+        super().__init__()
+        self.dest = dest
+        self._thread = threading.Thread(
+            target=self._writer,
+            args=(),
+            daemon=True,
+        )
+        self._thread.start()
+
+    def _writer(self):
+        """Write lines from this queue to it's destination file."""
+        with self.dest:
+            for line in iter(self.get, None):
+                print(line, file=self.dest, flush=True)
+
+
+    def put(self, item, block=True, timeout=None):
+        """
+        Put an item into the queue.
+
+        If the writer thread is dead, raises a BrokenPipeError
+        regardless of the arguments.
+        """
+        with self.mutex:
+            if not self._thread.is_alive():
+                fmt = "Writer thread for {} is dead."
+                msg = fmt.format(self.dest)
+                raise BrokenPipeError(msg)
+
+        super().put(item, block=block, timeout=timeout)
+
+        # A None will kill the thread, so wait until the thread dies
+        # to prevent a race condition.
+        if item is None:
+            self._thread.join()
+
+    def __repr__(self):
+        return "{name}.{cls}({args})".format(
+            name=__name__,
+            cls=self.__class__.__name__,
+            args=self.dest
+        )
 
 
 class Process(subprocess.Popen):
@@ -70,60 +160,16 @@ class Process(subprocess.Popen):
         super().__init__(args, **kwargs)
         self.workdir = workdir
 
+        Queues = collections.namedtuple(
+            'Queues',
+            ['stdin', 'stdout', 'stderr'],
+        )
 
-        # https://stackoverflow.com/a/4896288
-        self._queues = {
-            'stdin': ResizableQueue(),
-            'stdout': ResizableQueue(),
-            'stderr': ResizableQueue(),
-        }
-
-        self._threads = {
-            'stdin': threading.Thread(
-                target=self._write_lines_from_queue,
-                args=(self._queues['stdin'], self.stdin),
-                daemon=True,
-            ),
-            'stdout': threading.Thread(
-                target=self._read_lines_to_queue,
-                args=(self.stdout, self._queues['stdout']),
-                daemon=True,
-            ),
-            'stderr': threading.Thread(
-                target=self._read_lines_to_queue,
-                args=(self.stderr, self._queues['stderr']),
-                daemon=True,
-            ),
-        }
-
-        for thread in self._threads.values():
-            thread.start()
-
-    @staticmethod
-    def _read_lines_to_queue(src, q):
-        """Read lines from a source and put them into a queue."""
-        try:
-            with src:
-                for line in iter(src.readline, ''):
-                    q.put(line.strip())
-
-        except BrokenPipeError:
-            pass
-
-        q.resize(1)
-        while True:
-            q.put(None)
-
-    @staticmethod
-    def _write_lines_from_queue(q, dest):
-        """Write lines from a queue to a file."""
-        try:
-            with dest:
-                for line in iter(q.get, None):
-                    print(line, file=dest, flush=True)
-
-        except BrokenPipeError:
-            pass
+        self._queues = Queues(
+            stdin=LineWriterQueue(self.stdin),
+            stdout=LineReaderQueue(self.stdout),
+            stderr=LineReaderQueue(self.stderr),
+        )
 
     def writeline(self, line):
         """
@@ -131,12 +177,13 @@ class Process(subprocess.Popen):
 
         None is interpreted as an EOF, and closes the stream.
         """
-        t = self._threads['stdin']
-        if not t.isAlive():
-            fmt = "Reader thread {} for stdin of command {} is dead."
-            msg = fmt.format(t, self.args)
+        try:
+            self._queues.stdin.put(line, block=False, timeout=0)
+
+        except BrokenPipeError:
+            fmt = "Writer thread for stdin of command {} is dead."
+            msg = fmt.format(self.args)
             raise BrokenPipeError(msg)
-        self._queues['stdin'].put(line)
 
     def writelines(self, lines):
         """
@@ -158,7 +205,12 @@ class Process(subprocess.Popen):
 
         If the timeout is exceeded, raises a TimeoutError.
         """
-        q = self._queues[source]
+        if source == 'stdout':
+            q = self._queues.stdout
+        elif source == 'stderr':
+            q = self._queues.stderr
+        elif source == 'stdin':
+            q = self._queues.stdin
 
         try:
             if timeout == 0:
@@ -170,6 +222,11 @@ class Process(subprocess.Popen):
             fmt = "{} of command {} timed out after {} seconds"
             msg = fmt.format(source, self.args, timeout)
             raise TimeoutError(msg) from err
+
+        except BrokenPipeError as err:
+            fmt = 'Reader thread for {} of command {} is dead.'
+            msg = fmt.format(source, self.args)
+            raise BrokenPipeError(msg) from err
 
     def readlines(self, timeout=0, source='stdout', count=None):
         """
@@ -183,8 +240,6 @@ class Process(subprocess.Popen):
         about timeout * count seconds. The returned list may be
         shorter than count lines if timeout exceeds.
         """
-        q = self._queues[source]
-
         def readline():
             return self.readline(timeout=timeout, source=source)
 
@@ -192,8 +247,13 @@ class Process(subprocess.Popen):
         try:
             for line in itertools.islice(iter(readline, None), count):
                 output.append(line)
+
         except TimeoutError:
             pass
+
+        except BrokenPipeError:
+            pass
+
         return output
 
     def communicate(self, input=None, timeout=0.1):
