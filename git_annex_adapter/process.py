@@ -398,22 +398,59 @@ class GitAnnexBatchProcess:
         if self._process and self._process.poll() is None:
             return self._process
 
-        new_process = self._procclass(self.args, self.workdir)
+        try:
+            new_process = self._procclass(self.args, self.workdir)
+            new_process.check()
+
+        except FileNotFoundError as err:
+            if "No such file or directory:" in err.strerror:
+                fmt = "Path '{}' does not exist."
+                msg = fmt.format(self.workdir)
+                raise NotAGitRepoError(msg) from err
+            else:
+                raise
+
+        except subprocess.CalledProcessError as err:
+            if "git-annex: Not in a git repository" in err.stderr:
+                fmt = "Path '{}' is not in a git repository."
+                msg = fmt.format(self.workdir)
+                raise NotAGitRepoError(msg) from err
+            else:
+                raise
 
         if self._process:
-            # Log stdout and stderr of dead processes
-            (stdout, stderr) = self._process.communicate(timeout=0)
-            logger.debug('%s had died unexpectedly. ', self._process)
-            logger.debug('stdout:\n%s', stdout)
-            logger.debug('stderr:\n%s', stderr)
-            self._dead_process = (self._process, stdout, stderr)
-
             # Copy remaining stdin lines
             stdin = self._process.readlines(source='stdin')
             new_process.writelines(stdin)
+            self._dead_process = self._process
 
         self._process = new_process
         return self._process
+
+    def __call__(self, line):
+        p = self.process
+        output = p(line)
+
+        try:
+            done = p.check()
+
+        except subprocess.CalledProcessError as err:
+            # Process just died, but the stdin thread is waiting
+            # for a new value. Send None to close it.
+            p.writeline(None)
+            raise
+
+        if line is not None and done:
+            # Exited normally without a non-EOF input. Why?
+            logger.debug('Process %s exited with input line.', p)
+            logger.debug('stdin:\n%s', line)
+            logger.debug('stdout:\n%s\n%s', output, done.stdout)
+            logger.debug('stderr:\n%s', done.stderr)
+
+            # Close stdin thread just in case.
+            p.writeline(None)
+
+        return output
 
     def __repr__(self):
         return "{name}.{cls}({args})".format(
