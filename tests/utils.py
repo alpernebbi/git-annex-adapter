@@ -51,7 +51,7 @@ class TempDirTestCase(LoggedTestCase):
             prefix='git-annex-adapter-tests-',
         )
         self._tempdir.__enter__()
-        self.tempdir = self._tempdir.name
+        self.tempdir = pathlib.Path(self._tempdir.name)
 
     def tearDown(self):
         self._tempdir.__exit__(None, None, None)
@@ -69,7 +69,7 @@ class TempRepoTestCase(TempDirTestCase):
     """
     def setUp(self):
         super().setUp()
-        self.repo = pygit2.init_repository(self.tempdir)
+        self.repo = pygit2.init_repository(str(self.tempdir))
 
     def git_commit(self):
         """Commit the current index to the git repository."""
@@ -117,7 +117,7 @@ class TempAnnexTestCase(TempRepoTestCase):
         super().tearDown()
 
     def create_annexed_file(self, relpath, text):
-        path = pathlib.Path(self.tempdir) / relpath
+        path = self.tempdir / relpath
         path.parents[0].mkdir(parents=True, exist_ok=True)
         path.write_text(text)
 

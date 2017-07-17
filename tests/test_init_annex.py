@@ -31,12 +31,12 @@ class TestInitAnnexOnEmptyDir(TempDirTestCase):
     def test_init_annex_raises(self):
         """init_annex shouldn't work on empty directories."""
         with self.assertRaises(NotAGitRepoError):
-            init_annex(self.tempdir)
+            init_annex(str(self.tempdir))
 
     def test_init_annex_nonexistent(self):
         """init_annex shouldn't work on nonexistent directories."""
         with self.assertRaises(NotAGitRepoError):
-            init_annex(self.tempdir + '/nonexistent')
+            init_annex(str(self.tempdir / 'nonexistent'))
 
 
 class TestInitAnnexOnEmptyRepo(TempRepoTestCase):
@@ -45,26 +45,26 @@ class TestInitAnnexOnEmptyRepo(TempRepoTestCase):
     def test_init_annex_version_negative(self):
         """Negative numbers shouldn't be valid versions."""
         with self.assertRaises(ValueError):
-            init_annex(self.tempdir, version=-1)
+            init_annex(str(self.tempdir), version=-1)
 
     def test_init_annex_version_string(self):
         """Strings shouldn't be valid versions."""
         with self.assertRaises(ValueError):
-            init_annex(self.tempdir, version='foo')
+            init_annex(str(self.tempdir), version='foo')
 
     def test_init_annex_version_five(self):
         """Repository version 5 should be valid."""
-        annex_repo = init_annex(self.tempdir, version=5)
+        annex_repo = init_annex(str(self.tempdir), version=5)
         self.assertEqual(annex_repo.config['annex.version'], '5')
 
     def test_init_annex_version_six(self):
         """Repository version 6 should be valid."""
-        annex_repo = init_annex(self.tempdir, version=6)
+        annex_repo = init_annex(str(self.tempdir), version=6)
         self.assertEqual(annex_repo.config['annex.version'], '6')
 
     def test_init_annex_description(self):
         """init_annex with description should update uuid.log."""
-        repo = init_annex(self.tempdir, description='foo')
+        repo = init_annex(str(self.tempdir), description='foo')
         uuid = repo.config['annex.uuid']
         uuid_log_blob = repo.revparse_single('git-annex:uuid.log')
         self.assertIn(

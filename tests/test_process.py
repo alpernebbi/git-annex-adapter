@@ -31,24 +31,22 @@ from tests.utils import TempAnnexTestCase
 
 class TestQueuesOnEmptyDir(TempDirTestCase):
     """Test line reader/writer queues on an empty directory"""
+
     def setUp(self):
         super().setUp()
-        self.lines = [
-            '{:^3}'.format(i) for i in range(1000)
-        ]
-
-        self.filepath = str(pathlib.Path(self.tempdir) / 'test.txt')
+        self.testfile = self.tempdir / 'test.txt'
+        self.lines = ['{:^3}'.format(i) for i in range(1000)]
 
     def test_queue_writer_with_file(self):
         """LineWriterQueue written file should be correct"""
 
-        with open(self.filepath, 'w') as f:
+        with self.testfile.open('w') as f:
             q = LineWriterQueue(f)
             for line in self.lines:
                 q.put(line)
             q.put(None)
 
-        with open(self.filepath, 'r') as f:
+        with self.testfile.open('r') as f:
             self.assertEqual(
                 f.readlines(),
                 [x + '\n' for x in self.lines],
@@ -57,10 +55,10 @@ class TestQueuesOnEmptyDir(TempDirTestCase):
     def test_queue_reader_with_file(self):
         """LineReaderQueue should read lines correctly"""
 
-        with open(self.filepath, 'w') as f:
+        with self.testfile.open('w') as f:
             f.writelines(x + '\n' for x in self.lines)
 
-        with open(self.filepath, 'r') as f:
+        with self.testfile.open('r') as f:
             q = LineReaderQueue(f)
             self.assertEqual(
                 self.lines,
@@ -72,7 +70,7 @@ class TestQueuesOnEmptyDir(TempDirTestCase):
 
         with subprocess.Popen(
             ['cat'],
-            cwd=self.tempdir,
+            cwd=str(self.tempdir),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -96,7 +94,7 @@ class TestQueuesOnEmptyDir(TempDirTestCase):
 
         with subprocess.Popen(
             ['rev'],
-            cwd=self.tempdir,
+            cwd=str(self.tempdir),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -121,7 +119,7 @@ class TestProcessOnEmptyDir(TempDirTestCase):
 
     def test_runner_git_status(self):
         """ProcessRunner should raise on called process errors"""
-        runner = ProcessRunner(['git'], workdir=self.tempdir)
+        runner = ProcessRunner(['git'], workdir=str(self.tempdir))
         with self.assertRaises(subprocess.CalledProcessError) as cm:
             runner('status', '-sb')
         self.assertIn(
@@ -131,7 +129,7 @@ class TestProcessOnEmptyDir(TempDirTestCase):
 
     def test_runner_git_version(self):
         """ProcessRunner should return subprocess.CompletedProcess"""
-        runner = ProcessRunner(['git'], workdir=self.tempdir)
+        runner = ProcessRunner(['git'], workdir=str(self.tempdir))
         proc = runner('version')
         self.assertIsInstance(proc, subprocess.CompletedProcess)
         self.assertIn('git version', proc.stdout)
@@ -142,7 +140,7 @@ class TestProcessOnEmptyAnnex(TempAnnexTestCase):
 
     def test_process_git_status(self):
         """Process should be able to read whole output"""
-        with Process(['git', 'status'], self.tempdir) as proc:
+        with Process(['git', 'status'], str(self.tempdir)) as proc:
             stdout = proc.readlines(timeout=1, count=None)
             self.assertEqual(stdout, [
                 'On branch master',
@@ -157,7 +155,7 @@ class TestProcessOnEmptyAnnex(TempAnnexTestCase):
         """Process should be able to read one line"""
         with Process(
             ['git', 'annex', 'metadata', '--batch', '--json'],
-            self.tempdir,
+            str(self.tempdir),
         ) as proc:
             proc.writeline(
                 '{"key":"SHA256E-s0--0"}'
@@ -178,7 +176,7 @@ class TestProcessOnEmptyAnnex(TempAnnexTestCase):
         """JsonProcess should encode and decode properly"""
         with JsonProcess(
             ['git', 'annex', 'metadata', '--batch', '--json'],
-            self.tempdir,
+            str(self.tempdir),
         ) as proc:
             obj = proc({'key':'SHA256E-s0--0'})
             self.assertEqual(obj, {
@@ -194,7 +192,7 @@ class TestProcessOnEmptyAnnex(TempAnnexTestCase):
         """Process should be able to read multiple lines"""
         with Process(
             ['git', 'annex', 'info', '--batch'],
-            self.tempdir,
+            str(self.tempdir),
         ) as proc:
             proc.writeline('here')
             lines_here = proc.readlines(timeout=1, count=2)
@@ -216,12 +214,15 @@ class TestProcessOnEmptyAnnex(TempAnnexTestCase):
 
     def test_process_matches_popen_communicate(self):
         """Process.communicate should work as Popen.communicate does"""
-        with Process(['git', 'config', '-l'], self.tempdir) as proc:
+        with Process(
+            ['git', 'config', '-l'],
+            str(self.tempdir),
+        ) as proc:
             result_proc = proc.communicate()
 
         with subprocess.Popen(
             ['git', 'config', '-l'],
-            cwd=self.tempdir,
+            cwd=str(self.tempdir),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
