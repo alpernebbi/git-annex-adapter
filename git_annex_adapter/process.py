@@ -433,6 +433,10 @@ class GitAnnexBatchProcess:
         output = p(line)
 
         try:
+            # Stdout closed, process should die soon.
+            if output is None:
+                p.wait()
+
             done = p.check()
 
         except subprocess.CalledProcessError as err:
