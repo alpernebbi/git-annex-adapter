@@ -14,9 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import pathlib
 import subprocess
 import unittest
 
+from git_annex_adapter.process import LineReaderQueue
+from git_annex_adapter.process import LineWriterQueue
 from git_annex_adapter.process import Process
 from git_annex_adapter.process import JsonProcess
 from git_annex_adapter.process import ProcessRunner
@@ -24,6 +27,93 @@ from git_annex_adapter.process import ProcessRunner
 from tests.utils import TempDirTestCase
 from tests.utils import TempRepoTestCase
 from tests.utils import TempAnnexTestCase
+
+
+class TestQueuesOnEmptyDir(TempDirTestCase):
+    """Test line reader/writer queues on an empty directory"""
+    def setUp(self):
+        super().setUp()
+        self.lines = [
+            '{:^3}'.format(i) for i in range(1000)
+        ]
+
+        self.filepath = str(pathlib.Path(self.tempdir) / 'test.txt')
+
+    def test_queue_writer_with_file(self):
+        """LineWriterQueue written file should be correct"""
+
+        with open(self.filepath, 'w') as f:
+            q = LineWriterQueue(f)
+            for line in self.lines:
+                q.put(line)
+            q.put(None)
+
+        with open(self.filepath, 'r') as f:
+            self.assertEqual(
+                f.readlines(),
+                [x + '\n' for x in self.lines],
+            )
+
+    def test_queue_reader_with_file(self):
+        """LineReaderQueue should read lines correctly"""
+
+        with open(self.filepath, 'w') as f:
+            f.writelines(x + '\n' for x in self.lines)
+
+        with open(self.filepath, 'r') as f:
+            q = LineReaderQueue(f)
+            self.assertEqual(
+                self.lines,
+                list(iter(q.get, None)),
+            )
+
+    def test_queues_with_cat(self):
+        """Line queues should work with cat stdin/stdout"""
+
+        with subprocess.Popen(
+            ['cat'],
+            cwd=self.tempdir,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            bufsize=1,
+        ) as proc:
+            stdin = LineWriterQueue(proc.stdin)
+            stdout = LineReaderQueue(proc.stdout)
+
+            for line in self.lines:
+                stdin.put(line)
+            stdin.put(None)
+
+            self.assertEqual(
+                self.lines,
+                list(iter(stdout.get, None)),
+            )
+
+    def test_queues_with_rev(self):
+        """Line queues should work with rev stdin/stdout"""
+
+        with subprocess.Popen(
+            ['rev'],
+            cwd=self.tempdir,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            bufsize=1,
+        ) as proc:
+            stdin = LineWriterQueue(proc.stdin)
+            stdout = LineReaderQueue(proc.stdout)
+
+            for line in self.lines:
+                stdin.put(line)
+            stdin.put(None)
+
+            self.assertEqual(
+                self.lines,
+                [x[::-1] for x in iter(stdout.get, None)],
+            )
 
 
 class TestProcessOnEmptyDir(TempDirTestCase):
