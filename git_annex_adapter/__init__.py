@@ -49,9 +49,9 @@ version_str = process.GitAnnexVersionRunner(None)(raw=True).stdout
 logger.debug('git-annex version: {}'.format(version_str))
 git_annex_version = float(version_str.split('-g', 1)[0])
 
-if git_annex_version < 6.20160726:
+if git_annex_version < 6.20170101:
     fmt = "git-annex version {} must be at least {}"
-    msg = fmt.format(git_annex_version, 6.20160726)
+    msg = fmt.format(git_annex_version, 6.20170101)
     raise ImportError(msg)
 
 # Delete unnecessary variables

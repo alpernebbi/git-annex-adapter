@@ -10,6 +10,6 @@ whenever possible.
 Requirements
 ------------
 - Python 3
-- git-annex 6.20160726 (or later)
+- git-annex 6.20170101 (or later)
 - pygit2 0.24 (or later)
 
