@@ -14,12 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import types
 import collections.abc
 import logging
 import pygit2
 
 from .exceptions import NotAGitRepoError
 from .exceptions import NotAGitAnnexRepoError
+from .process import GitAnnexMetadataBatchJsonProcess
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +73,10 @@ class GitAnnex(collections.abc.Mapping):
             raise NotAGitAnnexRepoError(msg)
 
         self.repo = repo
+
+        self.processes = types.SimpleNamespace()
+        self.processes.metadata = \
+            GitAnnexMetadataBatchJsonProcess(self.repo.workdir)
 
     def get_file_tree(self, treeish='HEAD'):
         """Returns an AnnexedFileTree for the given treeish"""
@@ -161,11 +167,107 @@ class AnnexedFile:
     def __init__(self, repo, key):
         self.repo = repo
         self.key = key
+        self.metadata = AnnexedFileMetadata(self)
 
     def __repr__(self):
         return "{name}.{cls}({args})".format(
             name=__name__,
             cls=self.__class__.__name__,
             args=self.key,
+        )
+
+
+class AnnexedFileMetadata(collections.abc.MutableMapping):
+    """
+    Represents the metadata for a file stored by git-annex.
+
+    The output is cached, so if the metadata is externally modified,
+    it might not be correct until a reassignment is made. If you
+    assign to the externally modified field, that modification would
+    be overridden by yours.
+
+    The 'lastchanged' field and other fields ending with '-lastchanged'
+    are not externally modifiable, so this class skips them while
+    iterating metadata fields. However, they are still accessible.
+
+    Since git-annex does not keep the order of values for a field,
+    the values are returned as sets.
+
+    """
+    def __init__(self, file):
+        self.file = file
+        self._process = file.repo.annex.processes.metadata
+        self._cache = None
+
+    def _metadata(self, fields=None):
+        """Get unprocessed, cached fields object for this file."""
+        if fields:
+            output = self._process(key=self.file.key, fields=fields)
+            self._cache = output['fields']
+
+        elif self._cache is None:
+            output = self._process(key=self.file.key)
+            self._cache = output['fields']
+
+        return self._cache
+
+    def __getitem__(self, field):
+        """Get the value of a single field for this file."""
+        return set(self._metadata()[field])
+
+    def __setitem__(self, field, value):
+        """Set the value of a single field for this file."""
+        if not isinstance(value, set):
+            fmt = "Field '{}' value '{}' must be a set."
+            msg = fmt.format(field, value)
+            raise TypeError(msg)
+        self._metadata({field: list(value)})
+
+    def __delitem__(self, field):
+        """Remove given field from this file."""
+        self._metadata({field: []})
+
+    def __iter__(self):
+        """Iterate noninternal fields for this file."""
+        # Skip 'lastchanged' and fields that end in '-lastchanged'
+        for f in self._metadata():
+            if f != 'lastchanged' and not f.endswith('-lastchanged'):
+                yield f
+
+    def __len__(self):
+        """Return number of noninternal fields."""
+        return sum(1 for _ in iter(self))
+
+    def update(self, *args, **kwargs):
+        """Update fields for this file from a dict or keyword args."""
+        if len(args) > 1:
+            fmt = 'update expected at most 1 arguments, got {}.'
+            msg = fmt.format(len(args))
+            raise TypeError(msg)
+
+        fields = args[0] if args else {}
+        fields.update(kwargs)
+
+        for field, value in fields.items():
+            if not isinstance(value, set):
+                fmt = "Field '{}' value '{}' must be a set."
+                msg = fmt.format(field, value)
+                raise TypeError(msg)
+            fields[field] = list(value)
+
+        self._metadata(fields)
+
+    def clear(self):
+        """Remove all fields for this file."""
+        self._metadata({f: [] for f in self})
+
+    def __str__(self):
+        return str(dict(self))
+
+    def __repr__(self):
+        return "{name}.{cls}({args})".format(
+            name=__name__,
+            cls=self.__class__.__name__,
+            args=self.file.key,
         )
 
