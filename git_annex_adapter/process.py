@@ -351,9 +351,9 @@ class JsonProcess(Process):
         """
         line = self.readline(timeout=timeout, source=source)
 
-        try:
+        if line is not None and line != 'null':
             return json.loads(line)
-        except TypeError:
+        else:
             return line
 
     def writejson(self, obj):
