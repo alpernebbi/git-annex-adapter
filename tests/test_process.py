@@ -23,10 +23,13 @@ from git_annex_adapter.process import LineWriterQueue
 from git_annex_adapter.process import Process
 from git_annex_adapter.process import JsonProcess
 from git_annex_adapter.process import ProcessRunner
+from git_annex_adapter.process import GitAnnexBatchProcess
+from git_annex_adapter.process import GitAnnexBatchJsonProcess
 
 from tests.utils import TempDirTestCase
 from tests.utils import TempRepoTestCase
 from tests.utils import TempAnnexTestCase
+from tests.utils import ThreeAnnexedFilesTestCase
 
 
 class TestQueuesOnEmptyDir(TempDirTestCase):
@@ -232,6 +235,63 @@ class TestProcessOnEmptyAnnex(TempAnnexTestCase):
             result_popen = popen.communicate()
 
         self.assertEqual(result_proc, result_popen)
+
+
+class TestBatchProcessesOnThreeFiles(ThreeAnnexedFilesTestCase):
+    """Test git-annex batch/json processes on a three file annex"""
+
+    def test_batch_lookupkey(self):
+        """BatchProcess should work with lookupkey --batch"""
+        lookupkey = GitAnnexBatchProcess(
+            ['lookupkey', '--batch'],
+            str(self.tempdir),
+        )
+
+        for f, k in self.keys.items():
+            with self.subTest(file=f):
+                self.assertEqual(lookupkey(f), k)
+
+    def test_batchjson_metadata(self):
+        """BatchJsonProcess should work with metadata --batch --json"""
+        metadata = GitAnnexBatchJsonProcess(
+            ['metadata', '--batch', '--json'],
+            str(self.tempdir),
+        )
+
+        def meta(key, file=None):
+            return {
+                'command': 'metadata',
+                'note': '',
+                'success': True,
+                'key': key,
+                'file': file,
+                'fields': {},
+            }
+
+        for f, k in self.keys.items():
+            with self.subTest(file=f):
+                self.assertEqual(metadata({'key': k}), meta(k))
+                self.assertEqual(metadata({'file': f}), meta(k, f))
+
+    def test_batchjson_restarts(self):
+        """BatchJsonProcess should auto-restart dead processes"""
+        metadata = GitAnnexBatchJsonProcess(
+            ['metadata', '--batch', '--json'],
+            str(self.tempdir),
+        )
+
+        for f, k in self.keys.items():
+            with self.subTest(file=f):
+                file_meta = metadata({'file': f})
+                key_meta = metadata({'key': k})
+
+                # Invalid query
+                with self.assertRaises(subprocess.CalledProcessError):
+                    metadata({'key': 'invalid'})
+
+                self.assertEqual(file_meta, metadata({'file': f}))
+                self.assertEqual(key_meta, metadata({'key': k}))
+
 
 if __name__ == '__main__':
     unittest.main()
