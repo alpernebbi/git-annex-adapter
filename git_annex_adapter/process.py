@@ -479,6 +479,46 @@ class GitAnnexBatchJsonProcess(GitAnnexBatchProcess):
     _procclass = JsonProcess
 
 
+class GitAnnexMetadataBatchJsonProcess(GitAnnexBatchJsonProcess):
+    """
+    Helper class that interacts with git-annex metadata --batch --json.
+
+    """
+    def __init__(self, workdir):
+        super().__init__(['metadata', '--batch', '--json'], workdir)
+
+    def __call__(self, key=None, file=None, fields=None):
+        """
+        Sends a json command to the process, and returns the output.
+
+        *key* should be a git-annex internal key. *file* should be a
+        relative path to a file in the worktree. *fields* should be
+        a dict from strings to lists of strings.
+
+        All given fields are directly passed to the process without
+        validation.
+        """
+        query = {}
+        if key is not None:
+            query['key'] = key
+        if file is not None:
+            query['file'] = file
+        if fields is not None:
+            query['fields'] = fields
+
+        try:
+            return super().__call__(query)
+
+        except subprocess.CalledProcessError as err:
+            logger.debug("Unknown error:\n", exc_info=True)
+            logger.debug("stderr:\n{}".format(err.stderr))
+            raise
+
+        except:
+            logger.debug("Unknown error:\n", exc_info=True)
+            raise
+
+
 class ProcessRunner:
     """
     Helper class to repeatedly run a program with different arguments
