@@ -29,6 +29,15 @@ class TestGitAnnexRepoOnThreeFiles(ThreeAnnexedFilesTestCase):
             set(self.keys.values()),
         )
 
+    def test_file_tree(self):
+        """Flat AnnexedFileTree should be correct."""
+        tree = self.repo.annex.get_file_tree()
+        self.assertEqual(set(tree), set(self.files))
+
+        for f, k in self.keys.items():
+            with self.subTest(file=f):
+                self.assertEqual(tree[f].key, k)
+
 
 if __name__ == '__main__':
     unittest.main()
