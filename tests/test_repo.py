@@ -38,6 +38,49 @@ class TestGitAnnexRepoOnThreeFiles(ThreeAnnexedFilesTestCase):
             with self.subTest(file=f):
                 self.assertEqual(tree[f].key, k)
 
+    def test_metadata_mapping(self):
+        """AnnexedKeyMetadata should work as a mapping."""
+        file = self.files[0]
+        key = self.keys[file]
+        metadata = self.repo.annex[key].metadata
+        self.assertEqual(dict(metadata), {})
+
+        metadata['file'] = {file}
+        metadata['key'] = {key}
+        self.assertEqual(set(metadata), {'file', 'key'})
+        self.assertEqual(metadata['file'], {file})
+        self.assertEqual(metadata['key'], {key})
+
+        metadata.clear()
+        self.assertEqual(dict(metadata), {})
+
+        metadata.update(
+            {'foo': {'bar'}},
+            numbers={'1', '2', '3', '4'},
+            author={'me'},
+        )
+        self.assertEqual(set(metadata), {'foo', 'numbers', 'author'})
+        self.assertEqual(metadata['foo'], {'bar'})
+        self.assertEqual(metadata['numbers'], {'1', '2', '3', '4'})
+        self.assertEqual(metadata['author'], {'me'})
+
+        del metadata['author']
+        self.assertNotIn('author', metadata)
+
+        metadata['numbers'] |= {'0'}
+        metadata['numbers'] -= {'3', '4'}
+        self.assertEqual(metadata['numbers'], {'0', '1', '2'})
+
+        self.assertIn('lastchanged', metadata)
+        self.assertNotIn('lastchanged', set(metadata))
+
+        # In git-annex < 6.20161213 this triggers a bug
+        metadata['bug'] = {'a'}
+        metadata['bug'] = {'b'}
+        metadata['bug'] = {'c'}
+        metadata['bug'] = {'a'}
+        self.assertEqual(metadata['bug'], {'a'})
+
 
 if __name__ == '__main__':
     unittest.main()
