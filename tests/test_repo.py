@@ -15,6 +15,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import unittest
+import pathlib
 import pygit2
 
 from tests.utils import ThreeAnnexedFilesTestCase
@@ -81,6 +82,16 @@ class TestGitAnnexRepoOnThreeFiles(ThreeAnnexedFilesTestCase):
         metadata['bug'] = {'a'}
         self.assertEqual(metadata['bug'], {'a'})
 
+    def test_contentlocation_is_correct(self):
+        """Item contentlocations should be correct"""
+        for file, key in self.keys.items():
+            item = self.repo.annex[key]
+            with self.subTest(file=file):
+                p = pathlib.Path(item.contentlocation)
+                self.assertTrue(p.is_absolute())
+                self.assertTrue(p.is_file())
+                self.assertTrue(p.exists())
+                self.assertEqual(p.read_text(), file)
 
 if __name__ == '__main__':
     unittest.main()

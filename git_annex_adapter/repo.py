@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import types
 import collections.abc
 import logging
@@ -22,6 +23,7 @@ import pygit2
 from .exceptions import NotAGitRepoError
 from .exceptions import NotAGitAnnexRepoError
 from .process import GitAnnexMetadataBatchJsonProcess
+from .process import GitAnnexContentlocationBatchProcess
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +79,8 @@ class GitAnnex(collections.abc.Mapping):
         self.processes = types.SimpleNamespace()
         self.processes.metadata = \
             GitAnnexMetadataBatchJsonProcess(self.repo.workdir)
+        self.processes.contentlocation = \
+            GitAnnexContentlocationBatchProcess(self.repo.workdir)
 
     def get_file_tree(self, treeish='HEAD'):
         """Returns an AnnexedFileTree for the given treeish"""
@@ -168,6 +172,22 @@ class AnnexedFile:
         self.repo = repo
         self.key = key
         self.metadata = AnnexedFileMetadata(self)
+        self._contentlocation = None
+
+    @property
+    def contentlocation(self):
+        """Returns the absolute filename to the content of this key."""
+        if self._contentlocation:
+            return self._contentlocation
+
+        process = self.repo.annex.processes.contentlocation
+        relpath = process(self.key)
+        if not relpath:
+            return None
+
+        abspath = os.path.join(self.repo.workdir, relpath)
+        self._contentlocation = abspath
+        return self._contentlocation
 
     def __repr__(self):
         return "{name}.{cls}({args})".format(

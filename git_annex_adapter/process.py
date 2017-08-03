@@ -519,6 +519,31 @@ class GitAnnexMetadataBatchJsonProcess(GitAnnexBatchJsonProcess):
             raise
 
 
+class GitAnnexContentlocationBatchProcess(GitAnnexBatchProcess):
+    """
+    Helper class that interacts with git-annex contentlocation --batch.
+
+    """
+    def __init__(self, workdir):
+        super().__init__(['contentlocation', '--batch'], workdir)
+
+    def __call__(self, key):
+        """
+        Sends a git-annex key to the process, and returns the output.
+        """
+        try:
+            return super().__call__(key)
+
+        except subprocess.CalledProcessError as err:
+            logger.debug("Unknown error:\n", exc_info=True)
+            logger.debug("stderr:\n{}".format(err.stderr))
+            raise
+
+        except:
+            logger.debug("Unknown error:\n", exc_info=True)
+            raise
+
+
 class ProcessRunner:
     """
     Helper class to repeatedly run a program with different arguments
