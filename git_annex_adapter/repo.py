@@ -141,7 +141,14 @@ class AnnexedFileTree(collections.abc.Mapping):
             return AnnexedFileTree(self.repo, treeish=entry.hex)
 
         elif entry.type == 'blob' and not obj.is_binary:
-            blob = obj.data.decode()
+            try:
+                blob = obj.data.decode()
+            except UnicodeDecodeError:
+                fmt = "Nonbinary blob '{}' ({}) failed to decode."
+                msg = fmt.format(entry.name, entry.hex)
+                logger.debug(msg)
+                blob = ''
+
             # ../../../.git/annex/objects/aa/bb/*/*
             if blob.strip('./').startswith('git/annex/objects/'):
                 _, _, key = blob.rpartition('/')
