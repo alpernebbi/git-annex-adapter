@@ -634,7 +634,10 @@ class GitAnnexInitRunner(GitAnnexRunner):
                 self.logger.debug("Unknown error:\n", exc_info=True)
                 self.logger.debug("stderr:\n{}".format(err.stderr))
                 raise
- 
+
+        except NotAGitRepoError:
+            raise
+
         except:
             self.logger.debug("Unknown error:\n", exc_info=True)
             raise
