@@ -145,10 +145,22 @@ class TestProcessOnEmptyAnnex(TempAnnexTestCase):
         """Process should be able to read whole output"""
         with Process(['git', 'status'], str(self.tempdir)) as proc:
             stdout = proc.readlines(timeout=1, count=None)
+
+        try:
             self.assertEqual(stdout, [
                 'On branch master',
                 '',
                 'Initial commit',
+                '',
+                'nothing to commit (create/copy files '
+                + 'and use "git add" to track)',
+            ])
+
+        except AssertionError:
+            self.assertEqual(stdout, [
+                'On branch master',
+                '',
+                'No commits yet',
                 '',
                 'nothing to commit (create/copy files '
                 + 'and use "git add" to track)',
