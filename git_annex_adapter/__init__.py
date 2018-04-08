@@ -47,7 +47,17 @@ def init_annex(
 # Check git-annex version dependency
 version_str = process.GitAnnexVersionRunner(None)(raw=True).stdout
 logger.debug('git-annex version: {}'.format(version_str))
-git_annex_version = float(version_str.split('-g', 1)[0])
+
+# git-annex uses '-gREF', NeuroDebian uses '+gitREF' as suffix
+version_str = version_str.split('-g', 1)[0]
+version_str = version_str.split('+git', 1)[0]
+
+try:
+    git_annex_version = float(version_str)
+except ValueError:
+    fmt = "Format of git-annex version {} not recognized."
+    msg = fmt.format(git_annnex_version)
+    raise ImportError(msg)
 
 if git_annex_version < 6.20170101:
     fmt = "git-annex version {} must be at least {}"
