@@ -15,6 +15,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import pathlib
+import shutil
 import subprocess
 import unittest
 
@@ -94,6 +95,9 @@ class TestQueuesOnEmptyDir(TempDirTestCase):
 
     def test_queues_with_rev(self):
         """Line queues should work with rev stdin/stdout"""
+
+        if not shutil.which('rev'):
+            return self.skipTest('"rev" binary not found')
 
         with subprocess.Popen(
             ['rev'],
