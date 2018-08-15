@@ -129,10 +129,18 @@ class TestProcessOnEmptyDir(TempDirTestCase):
         runner = ProcessRunner(['git'], workdir=str(self.tempdir))
         with self.assertRaises(subprocess.CalledProcessError) as cm:
             runner('status', '-sb')
-        self.assertIn(
-            "fatal: Not a git repository",
-            cm.exception.stderr,
-        )
+
+        try:
+            self.assertIn(
+                "fatal: Not a git repository",
+                cm.exception.stderr,
+            )
+
+        except AssertionError:
+            self.assertIn(
+                "fatal: not a git repository",
+                cm.exception.stderr,
+            )
 
     def test_runner_git_version(self):
         """ProcessRunner should return subprocess.CompletedProcess"""
