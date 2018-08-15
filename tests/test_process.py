@@ -210,6 +210,7 @@ class TestProcessOnEmptyAnnex(TempAnnexTestCase):
             str(self.tempdir),
         ) as proc:
             proc.writeline('here')
+            proc.readlines(timeout=1,count=2)
             lines_here = proc.readlines(timeout=1, count=2)
             self.assertEqual(lines_here, [
                 'remote annex keys: 0',
