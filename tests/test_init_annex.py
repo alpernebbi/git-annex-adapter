@@ -58,9 +58,9 @@ class TestInitAnnexOnEmptyRepo(TempRepoTestCase):
         self.assertEqual(annex_repo.config['annex.version'], '5')
 
     def test_init_annex_version_six(self):
-        """Repository version 6 should be valid."""
-        annex_repo = init_annex(str(self.tempdir), version=6)
-        self.assertEqual(annex_repo.config['annex.version'], '6')
+        """Repository version 7 should be valid."""
+        annex_repo = init_annex(str(self.tempdir), version=7)
+        self.assertEqual(annex_repo.config['annex.version'], '7')
 
     def test_init_annex_description(self):
         """init_annex with description should update uuid.log."""
