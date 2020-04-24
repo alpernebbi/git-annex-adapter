@@ -100,11 +100,11 @@ class GitAnnex(collections.abc.Mapping):
         yield from (
             logf.name[:-4]
             for aaa in root
-            if aaa.type == 'tree'
+            if (aaa.type == 'tree' or aaa.type == pygit2.GIT_OBJ_TREE)
             for bbb in self.repo[aaa.id]
-            if bbb.type == 'tree'
+            if (bbb.type == 'tree' or bbb.type == pygit2.GIT_OBJ_TREE)
             for logf in self.repo[bbb.id]
-            if logf.type == 'blob' \
+            if (logf.type == 'blob' or logf.type == pygit2.GIT_OBJ_BLOB) \
             and logf.name.endswith('.log')
         )
 
@@ -142,10 +142,11 @@ class AnnexedFileTree(collections.abc.Mapping):
         entry = self._tree[path]
         obj = self.repo[entry.hex]
 
-        if entry.type == 'tree':
+        if entry.type == 'tree' or entry.type == pygit2.GIT_OBJ_TREE:
             return AnnexedFileTree(self.repo, treeish=entry.hex)
 
-        elif entry.type == 'blob' and not obj.is_binary:
+        elif (entry.type == 'blob' or entry.type == pygit2.GIT_OBJ_BLOB) \
+                and not obj.is_binary:
             try:
                 blob = obj.data.decode()
             except UnicodeDecodeError:
