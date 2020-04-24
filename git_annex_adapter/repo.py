@@ -131,8 +131,12 @@ class AnnexedFileTree(collections.abc.Mapping):
     def __init__(self, repo, treeish='HEAD'):
         super().__init__()
         self.repo = repo
-        self._rev = repo.revparse_single(treeish)
-        self._tree = self._rev.peel(pygit2.Tree)
+        if isinstance(treeish, pygit2.Index):
+            self._oid = treeish.write_tree(self.repo)
+            self._tree = repo[self._oid]
+        else:
+            self._rev = repo.revparse_single(treeish)
+            self._tree = self._rev.peel(pygit2.Tree)
 
     def __iter__(self):
         for entry in self._tree:
