@@ -179,6 +179,13 @@ class AnnexedFileTree(collections.abc.Mapping):
             args=self._tree.id,
         )
 
+    def find(self, *paths, match_opts=None):
+        proc = self.repo.annex.runners.find(
+            *paths, match_opts=match_opts, branch=self._tree.hex,
+        )
+        for obj in proc.stdout_objs:
+            yield obj["file"]
+
 
 class AnnexedFile:
     """
