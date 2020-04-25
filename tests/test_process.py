@@ -215,6 +215,7 @@ class TestProcessOnEmptyAnnex(TempAnnexTestCase):
                 'fields': {},
             })
 
+    @unittest.skip("Output changed in later versions")
     def test_process_annex_info_batch(self):
         """Process should be able to read multiple lines"""
         with Process(
