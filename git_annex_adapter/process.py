@@ -562,7 +562,7 @@ class ProcessRunner:
         ))
 
     def __call__(self, *args_suffix):
-        return subprocess.run(
+        proc = subprocess.run(
             (*self.args_prefix, *args_suffix),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -571,6 +571,16 @@ class ProcessRunner:
             cwd=self.workdir,
             check=True,
         )
+
+        try:
+            proc.stdout_objs = [
+                json.loads(line)
+                for line in proc.stdout.splitlines()
+            ]
+        except json.JSONDecodeError:
+            pass
+
+        return proc
 
     def __repr__(self):
         return "{name}.{cls}({args})".format(
