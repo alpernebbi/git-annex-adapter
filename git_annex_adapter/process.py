@@ -675,19 +675,18 @@ class GitAnnexVersionRunner(GitAnnexRunner):
             self.logger.debug("Unknown error:\n", exc_info=True)
             raise
 
-class GitAnnexFindRunner(GitAnnexRunner):
+
+class GitAnnexFindJsonRunner(GitAnnexRunner):
     """Helper class to run git-annex find commands."""
     def __init__(self, workdir):
-        super().__init__(['find'], workdir)
+        super().__init__(['find', '--json'], workdir)
 
-    def __call__(self, *paths, match_opts=None, branch=None, format=None):
+    def __call__(self, *paths, match_opts=None, branch=None):
         args = list(paths)
         if match_opts is not None:
             args.extend(match_opts)
         if branch is not None:
             args.append('--branch={}'.format(branch))
-        if format is not None:
-            args.append('--format={}'.format(format))
 
         try:
             return super().__call__(*args)
