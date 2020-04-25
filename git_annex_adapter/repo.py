@@ -308,3 +308,156 @@ class AnnexedFileMetadata(collections.abc.MutableMapping):
             args=self.file.key,
         )
 
+
+class AnnexMatchingOptions(collections.UserList):
+    """
+    Represents matching options you can pass to some git-annex commands.
+
+    You can either pass a list of options to the constructor of this
+    class, or you can chain multiple calls on an empty instance to build
+    up the command line arguments.
+
+    For example, you can construct this option chain:
+
+        --include=*.mp3 --and -( --in=usbdrive --or --in=archive -)
+
+    By passing it literally to the constructor:
+
+        match = AnnexMatchingOptions([
+            "--include=*.mp3", "--and", "-(",
+                "--in=usbdrive", "--or", "--in=archive",
+            "-)",
+        ])
+
+    Or by using bitwise operations within Python:
+
+        mp3s = AnnexMatchingOptions().include("*.mp3")
+        in_usbdrive = AnnexMatchingOptions().in_("usbdrive")
+        in_archive = AnnexMatchingOptions().in_("archive")
+        match = mp3s & (in_usbdrive | in_archive)
+
+    Or by mixing the two:
+
+        match = AnnexMatchingOptions().include("*.mp3")
+        match &= ["--in=usbdrive", "--or", "--in=archive"]
+
+    The bitwise operators may automatically group their operands, so the
+    final commandline string can slightly differ from the original,
+    while still being semantically equal.
+
+    Also see git-annex-matching-options(1) for the explanations for
+    these options.
+
+    """
+
+    def include(self, glob):
+        return self + ['--include={}'.format(glob)]
+
+    def exclude(self, glob):
+        return self + ['--exclude={}'.format(glob)]
+
+    def in_(self, repo, date=None):
+        opts = []
+        if date is None:
+            opts.append('--in={}'.format(repo))
+        else:
+            opts.append('--in={}@{}'.format(repo, date))
+        return self + opts
+
+    def copies(self, count, trustlevel=None, group=None):
+        opts = []
+        if trustlevel is not None:
+            opts.append('--copies={}:{}'.format(trustlevel, count))
+        if group is not None:
+            opts.append('--copies={}:{}'.format(group, count))
+        if opts == []:
+            opts.append('--copies={}'.format(count))
+        return self + opts
+
+    def lackingcopies(self, count):
+        return self + ['--lackingcopies={}'.format(count)]
+
+    def approxlackingcopies(self, count):
+        return self + ['--approxlackingcopies={}'.format(count)]
+
+    def inbackend(self, backend):
+        return self + ['--inbackend={}'.format(count)]
+
+    @property
+    def securehash(self):
+        return self + ['--securehash']
+
+    def inallgroup(self, group):
+        return self + ['--inallgroup={}'.format(group)]
+
+    def smallerthan(self, size):
+        return self + ['--smallerthan={}'.format(size)]
+
+    def largerthan(self, size):
+        return self + ['--largerthan={}'.format(size)]
+
+    def metadata(self, *conditions, **kwargs):
+        opts = []
+        for c in conditions:
+            opts.extend(('--metadata', c))
+        for key, value in kwargs.items():
+            opts.extend(('--metadata', '{}={}'.format(key, value)))
+        return self + opts
+
+    @property
+    def want_get(self):
+        return self + ['--want-get']
+
+    @property
+    def want_drop(self):
+        return self + ['--want-drop']
+
+    def accessedwithin(self, interval):
+        return self + ['--accessedwithin={}'.format(interval)]
+
+    @property
+    def unlocked(self):
+        return self + ['--unlocked']
+
+    @property
+    def locked(self):
+        return self + ['--locked']
+
+    def mimetype(self, glob):
+        return self + ['--mimetype={}'.format(glob)]
+
+    def mimeencoding(self, glob):
+        return self + ['--mimeencoding={}'.format(glob)]
+
+    def __invert__(self):
+        return AnnexMatchingOptions(
+            ['--not', '-(', *self, '-)']
+        )
+
+    def __and__(self, other):
+        return AnnexMatchingOptions(
+            ['-(', *self, '-)', '--and', '-(', *other, '-)']
+        )
+
+    def __rand__(self, other):
+        return AnnexMatchingOptions(
+            ['-(', *other, '-)', '--and', '-(', *self, '-)']
+        )
+
+    def __iand__(self, other):
+        self.data = ['-(', *self, '-)', '--and', '-(', *other, '-)']
+        return self
+
+    def __or__(self, other):
+        return AnnexMatchingOptions(
+            ['-(', *self, '-)', '--or', '-(', *other, '-)']
+        )
+
+    def __ror__(self, other):
+        return AnnexMatchingOptions(
+            ['-(', *other, '-)', '--or', '-(', *self, '-)']
+        )
+
+    def __ior__(self, other):
+        self.data = ['-(', *self, '-)', '--or', '-(', *other, '-)']
+        return self
