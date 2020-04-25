@@ -645,6 +645,11 @@ class GitAnnexInitRunner(GitAnnexRunner):
                 self.logger.debug("stderr:\n{}".format(err.stderr))
                 raise
 
+        except FileNotFoundError as err:
+            fmt = "Directory {} does not exist."
+            msg = fmt.format(self.workdir)
+            raise NotAGitRepoError(msg) from err
+
         except NotAGitRepoError:
             raise
 
