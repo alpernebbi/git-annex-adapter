@@ -10,6 +10,12 @@ batch versions whenever possible.
 I'm developing this as needed, so feel free to ask if there's any
 functionality you want me to implement.
 
+You might also like to check out datalad_'s annexrepo_ support package
+which is probably more featureful than this.
+
+.. _datalad: https://github.com/datalad/datalad/
+.. _annexrepo: https://docs.datalad.org/en/stable/generated/datalad.support.annexrepo.html#module-datalad.support.annexrepo
+
 Requirements
 ------------
 - Python 3
