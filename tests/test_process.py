@@ -188,14 +188,15 @@ class TestProcessOnEmptyAnnex(TempAnnexTestCase):
                 '{"key":"SHA256E-s0--0"}'
             )
             line = proc.readline(timeout=1)
-            self.assertEqual(line, ('{'
-                '"command":"metadata",'
-                '"note":"",'
-                '"success":true,'
-                '"key":"SHA256E-s0--0",'
-                '"file":null,'
-                '"fields":{}'
-            '}'))
+            for fragment in ('{',
+                '"command":"metadata",',
+                '"note":"",',
+                '"success":true,',
+                '"key":"SHA256E-s0--0",',
+                '"file":null,',
+                '"fields":{}',
+            '}'):
+                self.assertIn(fragment, line)
             line_call = proc('{"key":"SHA256E-s0--0"}')
             self.assertEqual(line_call, line)
 
@@ -205,15 +206,17 @@ class TestProcessOnEmptyAnnex(TempAnnexTestCase):
             ['git', 'annex', 'metadata', '--batch', '--json'],
             str(self.tempdir),
         ) as proc:
-            obj = proc({'key':'SHA256E-s0--0'})
-            self.assertEqual(obj, {
+            output = proc({'key':'SHA256E-s0--0'})
+            expected = {
                 'command': 'metadata',
                 'note': '',
                 'success': True,
                 'key': 'SHA256E-s0--0',
                 'file': None,
                 'fields': {},
-            })
+            }
+            for jk, jv in expected.items():
+                self.assertEqual(jv, output[jk])
 
     @unittest.skip("Output changed in later versions")
     def test_process_annex_info_batch(self):
@@ -284,7 +287,7 @@ class TestBatchProcessesOnThreeFiles(ThreeAnnexedFilesTestCase):
             str(self.tempdir),
         )
 
-        def meta(key, file=None):
+        def expected(key, file=None):
             return {
                 'command': 'metadata',
                 'note': '',
@@ -296,8 +299,14 @@ class TestBatchProcessesOnThreeFiles(ThreeAnnexedFilesTestCase):
 
         for f, k in self.keys.items():
             with self.subTest(file=f):
-                self.assertEqual(metadata({'key': k}), meta(k))
-                self.assertEqual(metadata({'file': f}), meta(k, f))
+
+                output = metadata({"key": k})
+                for jk, jv in expected(k).items():
+                    self.assertEqual(jv, output[jk])
+
+                output = metadata({"file": f})
+                for jk, jv in expected(k, f).items():
+                    self.assertEqual(jv, output[jk])
 
     def test_batchjson_restarts(self):
         """BatchJsonProcess should auto-restart dead processes"""
