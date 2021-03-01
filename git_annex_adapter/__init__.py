@@ -15,6 +15,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import re
 
 import git_annex_adapter.repo as repo
 import git_annex_adapter.process as process
@@ -48,13 +49,14 @@ def init_annex(
 version_str = process.GitAnnexVersionRunner(None)(raw=True).stdout
 logger.debug('git-annex version: {}'.format(version_str))
 
-# git-annex uses '-gREF', NeuroDebian uses '+gitREF' as suffix
-version_str = version_str.split('-g', 1)[0]
-version_str = version_str.split('+git', 1)[0]
-
+# Extract major & minor version from version_str, e.g. 7.20190819, 8.20210223
+# git-annex uses '-gREF', NeuroDebian has used '+gitREF' as suffix
+# e.g. '7.20190819+git2-g908476a9b-1~ndall+1', '8.20210223-1~ndall+1'
+version_match = re.match(r'([0-9]+\.[0-9]+)', version_str)
 try:
+    version_str = version_match.group(1)
     git_annex_version = float(version_str)
-except ValueError:
+except (AttributeError, ValueError):
     fmt = "Format of git-annex version {} not recognized."
     msg = fmt.format(git_annnex_version)
     raise ImportError(msg)
@@ -65,5 +67,7 @@ if git_annex_version < 6.20170101:
     raise ImportError(msg)
 
 # Delete unnecessary variables
+del re
+del version_match
 del version_str
 
