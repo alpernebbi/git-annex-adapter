@@ -25,6 +25,7 @@ from .exceptions import NotAGitAnnexRepoError
 from .process import GitAnnexMetadataBatchJsonProcess
 from .process import GitAnnexContentlocationBatchProcess
 from .process import GitAnnexFindJsonRunner
+from .process import GitAnnexGetJsonRunner
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +87,8 @@ class GitAnnex(collections.abc.Mapping):
         self.runners = types.SimpleNamespace()
         self.runners.find = \
             GitAnnexFindJsonRunner(self.repo.workdir)
+        self.runners.get = \
+            GitAnnexGetJsonRunner(self.repo.workdir)
 
     def get_file_tree(self, treeish='HEAD'):
         """Returns an AnnexedFileTree for the given treeish"""
@@ -212,6 +215,10 @@ class AnnexedFile:
         abspath = os.path.join(self.repo.workdir, relpath)
         self._contentlocation = abspath
         return self._contentlocation
+
+    def get(self):
+        proc = self.repo.annex.runners.get(key=self.key)
+        return proc.returncode == 0
 
     def __repr__(self):
         return "{name}.{cls}({args})".format(

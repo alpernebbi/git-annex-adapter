@@ -704,3 +704,30 @@ class GitAnnexFindJsonRunner(GitAnnexRunner):
         except:
             self.logger.debug("Unknown error:\n", exc_info=True)
             raise
+
+
+class GitAnnexGetJsonRunner(GitAnnexRunner):
+    """Helper class to run git-annex get commands."""
+    def __init__(self, workdir):
+        super().__init__(['get', '--json'], workdir)
+
+    def __call__(self, *paths, key=None, match_opts=None, branch=None):
+        args = list(paths)
+        if key is not None:
+            args.append("--key={}".format(key))
+        if match_opts is not None:
+            args.extend(match_opts)
+        if branch is not None:
+            args.append('--branch={}'.format(branch))
+
+        try:
+            return super().__call__(*args)
+
+        except subprocess.CalledProcessError as err:
+            self.logger.debug("Unknown error:\n", exc_info=True)
+            self.logger.debug("stderr:\n{}".format(err.stderr))
+            raise
+
+        except:
+            self.logger.debug("Unknown error:\n", exc_info=True)
+            raise
