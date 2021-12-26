@@ -287,7 +287,7 @@ class Process(subprocess.Popen):
 
     def check(self):
         """
-        Check if the process has exited, and if an error occured.
+        Check if the process has exited, and if an error occurred.
 
         Returns None if process hasn't exited, or a CompletedProcess
         object if it has exited without an error. If the process
