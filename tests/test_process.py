@@ -189,11 +189,11 @@ class TestProcessOnEmptyAnnex(TempAnnexTestCase):
             )
             line = proc.readline(timeout=1)
             for fragment in ('{',
-                '"command":"metadata",',
-                '"note":"",',
-                '"success":true,',
-                '"key":"SHA256E-s0--0",',
-                '"file":null,',
+                '"command":"metadata"',
+                '"note":""',
+                '"success":true',
+                '"key":"SHA256E-s0--0"',
+                '"file":null',
                 '"fields":{}',
             '}'):
                 self.assertIn(fragment, line)
